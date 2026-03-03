@@ -20,6 +20,9 @@ var connectedUsers = {};
 io.on("connection", function (socket) {
   console.log("User connected: " + socket.id);
 
+  // Send taken users list on first connect
+  socket.emit("users-update", Object.values(connectedUsers));
+
   socket.on("join", function (userId) {
     connectedUsers[socket.id] = userId;
     console.log("User " + userId + " joined");

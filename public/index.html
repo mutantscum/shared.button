@@ -48,6 +48,11 @@
             width: 200px;
         }
 
+        #user-select option:disabled {
+            color: #555;
+            background: #2a2a2a;
+        }
+
         #join-btn {
             font-family: monospace;
             font-size: 16px;
@@ -219,9 +224,21 @@
             }
         });
 
-        // User count updates
+        // User count updates and grey out taken users
         socket.on("users-update", function (users) {
             document.getElementById("user-count").textContent = users.length + " user" + (users.length === 1 ? "" : "s");
+
+            // Grey out taken users in dropdown
+            var options = document.getElementById("user-select").options;
+            for (var i = 1; i < options.length; i++) {
+                if (users.indexOf(options[i].value) !== -1) {
+                    options[i].disabled = true;
+                    options[i].textContent = options[i].value + " (taken)";
+                } else {
+                    options[i].disabled = false;
+                    options[i].textContent = options[i].value;
+                }
+            }
         });
 
         // Connection status

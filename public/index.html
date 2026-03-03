@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Shared Button</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: monospace;
+            background: #1a1a1a;
+            color: #eee;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        #join-screen {
+            text-align: center;
+        }
+
+        #join-screen h1 {
+            font-size: 24px;
+            margin-bottom: 30px;
+            font-weight: normal;
+            letter-spacing: 2px;
+        }
+
+        #user-select {
+            font-family: monospace;
+            font-size: 18px;
+            padding: 12px 20px;
+            background: #333;
+            color: #eee;
+            border: 1px solid #555;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            width: 200px;
+        }
+
+        #join-btn {
+            font-family: monospace;
+            font-size: 16px;
+            padding: 14px 40px;
+            background: #ff8800;
+            color: #111;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            display: block;
+            margin: 0 auto;
+        }
+
+        #button-screen {
+            display: none;
+            text-align: center;
+            width: 100%;
+            height: 100%;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #status-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 10px 20px;
+            background: #222;
+            border-bottom: 1px solid #333;
+            font-size: 12px;
+            color: #888;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        #big-button {
+            width: 260px;
+            height: 260px;
+            border-radius: 50%;
+            background: #333;
+            border: 4px solid #555;
+            cursor: pointer;
+            transition: background 0.05s, border-color 0.05s, box-shadow 0.05s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: monospace;
+            font-size: 14px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            touch-action: none;
+        }
+
+        #big-button.active {
+            background: #ff8800;
+            border-color: #ffaa44;
+            box-shadow: 0 0 60px rgba(255, 136, 0, 0.5);
+            color: #111;
+        }
+
+        #user-label {
+            margin-top: 30px;
+            font-size: 14px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="join-screen">
+        <h1>SHARED BUTTON</h1>
+        <select id="user-select">
+            <option value="">Select user...</option>
+        </select>
+        <br><br>
+        <button id="join-btn">Connect</button>
+    </div>
+
+    <div id="button-screen">
+        <div id="status-bar">
+            <span id="connection-status">Connecting...</span>
+            <span id="user-count">0 users</span>
+        </div>
+        <div id="big-button">HOLD</div>
+        <div id="user-label"></div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        var socket = io();
+        var isPressed = false;
+        var userId = null;
+
+        // Populate user dropdown 1-100
+        var select = document.getElementById("user-select");
+        for (var i = 1; i <= 100; i++) {
+            var opt = document.createElement("option");
+            opt.value = "User " + i;
+            opt.textContent = "User " + i;
+            select.appendChild(opt);
+        }
+
+        // Join button
+        document.getElementById("join-btn").addEventListener("click", function () {
+            var selected = document.getElementById("user-select").value;
+            if (!selected) {
+                return;
+            }
+            userId = selected;
+            socket.emit("join", userId);
+            document.getElementById("join-screen").style.display = "none";
+            document.getElementById("button-screen").style.display = "flex";
+            document.getElementById("user-label").textContent = userId;
+        });
+
+        // Button interaction
+        var btn = document.getElementById("big-button");
+
+        function pressDown() {
+            if (isPressed) {
+                return;
+            }
+            isPressed = true;
+            btn.classList.add("active");
+            socket.emit("button-down");
+        }
+
+        function pressUp() {
+            if (!isPressed) {
+                return;
+            }
+            isPressed = false;
+            btn.classList.remove("active");
+            socket.emit("button-up");
+        }
+
+        // Mouse events
+        btn.addEventListener("mousedown", pressDown);
+        btn.addEventListener("mouseup", pressUp);
+        btn.addEventListener("mouseleave", pressUp);
+
+        // Touch events
+        btn.addEventListener("touchstart", function (e) {
+            e.preventDefault();
+            pressDown();
+        });
+
+        btn.addEventListener("touchend", function (e) {
+            e.preventDefault();
+            pressUp();
+        });
+
+        btn.addEventListener("touchcancel", function (e) {
+            e.preventDefault();
+            pressUp();
+        });
+
+        // Receive state from server
+        socket.on("button-state", function (state) {
+            if (state) {
+                btn.classList.add("active");
+            } else {
+                btn.classList.remove("active");
+            }
+        });
+
+        // User count updates
+        socket.on("users-update", function (users) {
+            document.getElementById("user-count").textContent = users.length + " user" + (users.length === 1 ? "" : "s");
+        });
+
+        // Connection status
+        socket.on("connect", function () {
+            document.getElementById("connection-status").textContent = "Connected";
+            document.getElementById("connection-status").style.color = "#4f4";
+        });
+
+        socket.on("disconnect", function () {
+            document.getElementById("connection-status").textContent = "Disconnected";
+            document.getElementById("connection-status").style.color = "#f44";
+        });
+    </script>
+</body>
+</html>

@@ -1,7 +1,7 @@
 {
-  "name": "shared-button",
+  "name": "swarm",
   "version": "1.0.0",
-  "description": "Shared momentary button proof of concept",
+  "description": "SWARM - 24 channel collaborative mixer control",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

@@ -1,0 +1,2073 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SWARM Master Console</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: linear-gradient(180deg, #999999, #2d2d2d);
+      font-family: 'Arial', sans-serif;
+      color: #000000;
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    #swarm-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 2000;
+      padding: 8px 20px;
+      background: #111;
+      border-bottom: 2px solid #ff8800;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: monospace;
+      font-size: 12px;
+      color: #888;
+    }
+
+    #swarm-bar .swarm-title {
+      font-size: 16px;
+      color: #ff8800;
+      letter-spacing: 3px;
+      font-weight: bold;
+    }
+
+    #swarm-bar .swarm-status {
+      color: #f44;
+    }
+
+    #swarm-bar .swarm-status.connected {
+      color: #4f4;
+    }
+
+    .swarm-indicator {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 6px;
+      background: #f44;
+      vertical-align: middle;
+    }
+
+    .swarm-indicator.connected {
+      background: #4f4;
+      box-shadow: 0 0 6px rgba(68, 255, 68, 0.5);
+    }
+
+    .mixer-container {
+      background: linear-gradient(145deg, #eeeeee, #eeeeee);
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+      max-width: 6000px;
+      margin: 40px auto 0 auto;
+    }
+
+    .mixer-title {
+      text-align: center;
+      font-size: 28px;
+      font-weight: bold;
+      margin-bottom: 30px;
+      background: linear-gradient(45deg, #000000, #000000);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .vu-meters {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .vu-meter-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+
+    .vu-meter-large {
+      width: 150px;
+      height: 75px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .vu-meter-image {
+      width: 100%;
+      height: 100%;
+      background-image: url('https://greghunter.co.uk/wp-content/uploads/2025/06/VU.png');
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+    }
+
+    .vu-needle-svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    .vu-sprite {
+      position: absolute;
+      width: 2px;
+      height: 2px;
+      background: red;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .vu-label {
+      font-size: 8px;
+      font-weight: bold;
+      color: #000;
+      margin-top: 4px;
+      text-align: center;
+    }
+
+    .fader-section {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      margin-bottom: 30px;
+    }
+
+    .fader-strip {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: linear-gradient(145deg, #eeeeee, #eeeeee);
+      border-radius: 6px;
+      padding: 8px 4px;
+      width: 38px;
+      box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.3);
+      position: relative;
+      flex-shrink: 0;
+      flex-grow: 0;
+    }
+
+    .fader-strip.swarm-cut-active {
+      box-shadow: inset 0 2px 10px rgba(255, 0, 0, 0.5), 0 0 8px rgba(255, 0, 0, 0.3);
+    }
+
+    .fader-label {
+      font-size: 10px;
+      font-weight: bold;
+      margin-bottom: 6px;
+      color: #000000;
+      text-align: center;
+    }
+
+    .ppm-meter {
+      background: linear-gradient(145deg, #000000, #000000);
+      border-radius: 2px;
+      padding: 2px;
+      border: 1px solid #333;
+      width: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    .ppm-label {
+      text-align: center;
+      font-size: 5px;
+      color: #fff;
+      margin-bottom: 2px;
+      font-weight: bold;
+    }
+
+    .ppm-bar {
+      width: 6px;
+      height: 50px;
+      background: linear-gradient(to top, #ff7e00 0%, #ffd200 50%, #ffd200 50%, #e6e6ca 80%, #e6e6ca 80%, #ff0000 100%);
+      border-radius: 1px;
+      position: relative;
+      border: 1px solid #222;
+    }
+
+    .ppm-level {
+      position: absolute;
+      top: 0;
+      width: 100%;
+      background: rgba(0,0,0,0.8);
+      border-radius: 1px 1px 0 0;
+      transition: height 0.1s ease;
+    }
+
+    .channel-buttons {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 1px;
+      margin-bottom: 6px;
+      width: auto;
+      padding: 0;
+      flex-shrink: 0;
+      flex-grow: 0;
+    }
+
+    .channel-btn {
+      display: inline-block;
+      width: 26px !important;
+      height: 26px !important;
+      padding: 1px !important;
+      margin: 3px !important;
+      background: linear-gradient(145deg, #444, #222);
+      border: none !important;
+      border-radius: 1px !important;
+      font-size: 6px !important;
+      font-weight: bold;
+      line-height: 10px !important;
+      text-align: center;
+      color: #fff;
+      text-transform: uppercase;
+      box-shadow: 0 0.5px 1px rgba(0, 0, 0, 0.3);
+      flex-shrink: 0 !important;
+      flex-grow: 0 !important;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    .channel-btn:active, .channel-btn:focus {
+      transform: none !important;
+      box-shadow: none !important;
+      outline: none !important;
+      position: relative !important;
+      top: 0 !important;
+    }
+
+    .channel-btn.mute {
+      background: linear-gradient(145deg, #663333, #441111);
+    }
+
+    .channel-btn.mute.active {
+      background: linear-gradient(145deg, #e91414, #bb0f0f);
+      box-shadow: 0 0 4px rgba(255, 68, 68, 0.5);
+    }
+
+    .channel-btn.solo {
+      background: linear-gradient(145deg, #665733, #694516);
+    }
+
+    .channel-btn.solo.active {
+      background: linear-gradient(145deg, #ffaa00, #cc8800);
+      box-shadow: 0 0 4px rgba(255, 170, 0, 0.5);
+    }
+
+    .pan-pot {
+      width: 30px;
+      height: 30px;
+      background: radial-gradient(circle, #eeeeee, #ffffff);
+      border-radius: 50%;
+      margin: 2px auto 4px 0px;
+      position: relative;
+      border: 1px solid #666;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      touch-action: none;
+    }
+
+    .pan-knob {
+      width: 1px;
+      height: 16px;
+      background: linear-gradient(to bottom, #ff8800, #cc6600);
+      position: absolute;
+      top: 3.5px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-radius: 1px;
+      box-shadow: 0 0 2px rgba(255, 136, 0, 0.5);
+    }
+
+    .fader-container {
+      height: 200px;
+      width: 6px;
+      background: linear-gradient(145deg, #1a1a1a, #333);
+      border-radius: 3px;
+      margin-bottom: 8px;
+      position: relative;
+      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5);
+    }
+
+    .fader-track {
+      position: absolute;
+      top: 5px;
+      bottom: 5px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 2px;
+      background: #444;
+      border-radius: 1px;
+    }
+
+    .fader-handle {
+      position: absolute;
+      width: 35px;
+      height: 22px;
+      background: linear-gradient(145deg, #666, #333);
+      border-radius: 2px;
+      cursor: pointer;
+      left: 50%;
+      transform: translateX(-50%);
+      top: 200px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+      touch-action: none;
+    }
+
+    .fader-handle::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 20px;
+      height: 3px;
+      background: #ff8800;
+      border-radius: 1px;
+      box-shadow: 0 0 3px rgba(255, 136, 0, 0.5);
+    }
+
+    .db-readout {
+      font-size: 10px;
+      font-weight: bold;
+      color: #000000;
+      text-align: center;
+      min-height: 10px;
+      padding: 1px;
+      width: 30px;
+    }
+
+    .master-fader {
+      width: 35px;
+      margin-left: 20px;
+      background: linear-gradient(145deg, #e8e8e8, #d8d8d8);
+      border: 2px solid #ccc;
+    }
+
+    .master-fader .fader-label {
+      font-size: 8px;
+      font-weight: bold;
+      background: linear-gradient(145deg, #ff8800, #cc6600);
+      color: white;
+      padding: 2px;
+      border-radius: 2px;
+      margin-bottom: 8px;
+    }
+
+    .master-fader .fader-container {
+      width: 10px;
+      background: linear-gradient(145deg, #0a0a0a, #2a2a2a);
+      border: 1px solid #555;
+    }
+
+    .master-fader .fader-track {
+      width: 5px;
+      background: #333;
+    }
+
+    .master-handle {
+      width: 45px;
+      height: 25px;
+      background: linear-gradient(145deg, #ff8800, #cc6600);
+      border: 1px solid #aa5500;
+      touch-action: none;
+    }
+
+    .master-handle::before {
+      width: 18px;
+      height: 3px;
+      background: #fff;
+      box-shadow: 0 0 4px rgba(255, 255, 255, 0.8);
+    }
+
+    .loading-status {
+      position: fixed;
+      top: 50px;
+      right: 20px;
+      background: rgba(0, 0, 0, 0.9);
+      color: white;
+      padding: 15px;
+      border-radius: 8px;
+      font-size: 12px;
+      z-index: 1000;
+      max-width: 300px;
+      border: 1px solid #333;
+    }
+
+    .loading-progress {
+      margin-top: 8px;
+      font-size: 10px;
+      opacity: 0.8;
+    }
+
+    .channel-status {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      margin: 1px;
+      background: #666;
+    }
+
+    .channel-status.loaded { background: #00ff00; }
+    .channel-status.error { background: #ff4444; }
+
+    .transport-controls {
+      text-align: center;
+      margin-top: 20px;
+      padding: 20px;
+      background: linear-gradient(145deg, #f5f5f5, #e5e5e5);
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+
+    .aux-controls {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      padding: 20px;
+      background: linear-gradient(145deg, #e8e8e8, #d8d8d8);
+      border-radius: 10px;
+      flex-wrap: wrap;
+    }
+
+    .aux-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 15px;
+      background: linear-gradient(145deg, #f0f0f0, #e0e0e0);
+      border-radius: 8px;
+      min-width: 200px;
+    }
+
+    .aux-title {
+      font-size: 14px;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 15px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .aux-control-group {
+      display: flex;
+      gap: 20px;
+      align-items: flex-end;
+    }
+
+    .aux-control {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .aux-knob {
+      width: 40px;
+      height: 40px;
+      background: radial-gradient(circle at 30% 30%, #888, #333);
+      border-radius: 50%;
+      position: relative;
+      border: 2px solid #666;
+      cursor: pointer;
+      touch-action: none;
+    }
+
+    .aux-knob-indicator {
+      width: 3px;
+      height: 16px;
+      background: linear-gradient(to bottom, #ff8800, #cc6600);
+      position: absolute;
+      top: 3px;
+      left: 50%;
+      transform: translateX(-50%) rotate(0deg);
+      border-radius: 2px;
+      box-shadow: 0 0 3px rgba(255, 136, 0, 0.5);
+      transform-origin: center 17px;
+    }
+
+    .aux-label {
+      font-size: 10px;
+      font-weight: bold;
+      color: #333;
+      text-transform: uppercase;
+    }
+
+    .aux-value {
+      font-size: 12px;
+      color: #000;
+      text-align: center;
+      min-height: 15px;
+      font-weight: bold;
+    }
+
+    .channel-aux-sends {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      margin-bottom: 4px;
+    }
+
+    .aux-send-knob {
+      width: 26px;
+      height: 26px;
+      background: radial-gradient(circle at 30% 30%, #eeeeee, #ffffff);
+      border-radius: 50%;
+      position: relative;
+      border: 1px solid #444;
+      cursor: pointer;
+      touch-action: none;
+    }
+
+    .aux-send-knob.swarm-active {
+      border-color: #ff8800;
+      box-shadow: 0 0 6px rgba(255, 136, 0, 0.6);
+    }
+
+    .aux-send-indicator {
+      width: 2px;
+      height: 12px;
+      background: #ff8800;
+      position: absolute;
+      top: 5px;
+      left: 50%;
+      transform: translateX(-50%) rotate(0deg);
+      border-radius: 1px;
+      transform-origin: center 8px;
+    }
+
+    .transport-btn {
+      background: linear-gradient(145deg, #666, #333);
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      margin: 0 10px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      min-width: 120px;
+    }
+
+    .play-btn { background: linear-gradient(145deg, #00aa00, #008800); }
+    .play-btn.playing { background: linear-gradient(145deg, #ffaa00, #ff8800); }
+    .stop-btn { background: linear-gradient(145deg, #aa0000, #880000); }
+    .loop-btn { background: linear-gradient(145deg, #666, #333); }
+    .loop-btn.active { background: linear-gradient(145deg, #0088ff, #0066cc); }
+
+    .upload-btn {
+      width: 26px !important;
+      height: 14px !important;
+      background: #eeeeee !important;
+      border: none !important;
+      border-radius: 2px !important;
+      color: black !important;
+      font-size: 8px !important;
+      font-weight: bold;
+      cursor: pointer;
+      margin: 3px !important;
+      display: inline-block;
+      text-align: center;
+      line-height: 14px !important;
+      padding: 0 !important;
+      flex-shrink: 0 !important;
+      flex-grow: 0 !important;
+    }
+
+    .upload-input { display: none; }
+
+    .aux-value-input {
+      font-size: 9px;
+      color: #333;
+      text-align: center;
+      border-radius: 2px;
+      padding: 1px;
+    }
+
+    .fader-strip.master-fader .pan-pot {
+      margin-left: -3px;
+    }
+  </style>
+</head>
+<body>
+  <div id="swarm-bar">
+    <span class="swarm-title">SWARM MASTER</span>
+    <span><span class="swarm-indicator" id="swarm-indicator"></span><span class="swarm-status" id="swarm-status">Disconnected</span></span>
+    <span id="swarm-user-count">0 users</span>
+  </div>
+
+  <div class="loading-status" id="loadingStatus">
+    <div>Loading 24 audio tracks...</div>
+    <div class="loading-progress" id="loadingProgress">
+      <div id="channelStatus"></div>
+      <div id="progressText">0/24 loaded</div>
+    </div>
+  </div>
+
+  <div class="mixer-container">
+    <div class="vu-meters">
+      <div class="vu-meter-container">
+        <div class="vu-meter-large">
+          <div class="vu-meter-image"></div>
+          <svg class="vu-needle-svg" viewBox="0 0 150 75">
+            <line id="needleLineLeft" x1="75" y1="92" x2="75" y2="25" stroke="red" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
+          <div id="vuSpriteLeft" class="vu-sprite"></div>
+        </div>
+        <div class="vu-label">LEFT</div>
+      </div>
+      <div class="vu-meter-container">
+        <div class="vu-meter-large">
+          <div class="vu-meter-image"></div>
+          <svg class="vu-needle-svg" viewBox="0 0 150 75">
+            <line id="needleLineRight" x1="75" y1="92" x2="75" y2="25" stroke="red" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
+          <div id="vuSpriteRight" class="vu-sprite"></div>
+        </div>
+        <div class="vu-label">RIGHT</div>
+      </div>
+    </div>
+    <div class="fader-section" id="faders"></div>
+    <div class="transport-controls">
+      <button id="playBtn" class="transport-btn play-btn">&#9654; PLAY</button>
+      <button id="stopBtn" class="transport-btn stop-btn">&#9209; STOP</button>
+      <button id="loopBtn" class="transport-btn loop-btn active">&#128257; LOOP</button>
+    </div>
+    <div class="aux-controls">
+      <div class="aux-section">
+        <div class="aux-title">AUX 1 - REVERB</div>
+        <div class="aux-control-group">
+          <div class="aux-control">
+            <div class="aux-knob" id="reverbSizeKnob" data-min="1" data-max="100" data-value="20"><div class="aux-knob-indicator"></div></div>
+            <div class="aux-label">SIZE/DECAY</div>
+            <div class="aux-value" id="reverbSizeValue">20m / 2.0s</div>
+          </div>
+          <div class="aux-control">
+            <div class="aux-knob" id="reverbLevelKnob" data-min="0" data-max="100" data-value="100"><div class="aux-knob-indicator" style="transform: rotate(135deg);"></div></div>
+            <div class="aux-label">LEVEL</div>
+            <div class="aux-value" id="reverbLevelValue">100%</div>
+          </div>
+        </div>
+      </div>
+      <div class="aux-section">
+        <div class="aux-title">AUX 2 - DELAY</div>
+        <div class="aux-control-group">
+          <div class="aux-control">
+            <div class="aux-knob" id="delayTimeKnob" data-min="1" data-max="1000" data-value="271"><div class="aux-knob-indicator"></div></div>
+            <div class="aux-label">TIME</div>
+            <input type="number" class="aux-value-input" id="delayTimeInput" min="1" max="1000" value="271" style="width: 70px; height: 20px; text-align: center; font-size: 12px; border: 1px solid #666; background: #f0f0f0;">
+          </div>
+          <div class="aux-control">
+            <div class="aux-knob" id="delayFeedbackKnob" data-min="0" data-max="99.999" data-value="35"><div class="aux-knob-indicator"></div></div>
+            <div class="aux-label">FEEDBACK</div>
+            <div class="aux-value" id="delayFeedbackValue">35%</div>
+          </div>
+          <div class="aux-control">
+            <div class="aux-knob" id="delayLevelKnob" data-min="0" data-max="100" data-value="100"><div class="aux-knob-indicator" style="transform: rotate(135deg);"></div></div>
+            <div class="aux-label">LEVEL</div>
+            <div class="aux-value" id="delayLevelValue">100%</div>
+          </div>
+        </div>
+      </div>
+      <div class="aux-section">
+        <div class="aux-title">AUX 3 - REVERB 2</div>
+        <div class="aux-control-group">
+          <div class="aux-control">
+            <div class="aux-knob" id="reverb2SizeKnob" data-min="5" data-max="100" data-value="30"><div class="aux-knob-indicator"></div></div>
+            <div class="aux-label">SIZE</div>
+            <div class="aux-value" id="reverb2SizeValue">30m</div>
+          </div>
+          <div class="aux-control">
+            <div class="aux-knob" id="reverb2LevelKnob" data-min="0" data-max="100" data-value="100"><div class="aux-knob-indicator" style="transform: rotate(135deg);"></div></div>
+            <div class="aux-label">LEVEL</div>
+            <div class="aux-value" id="reverb2LevelValue">100%</div>
+          </div>
+        </div>
+      </div>
+      <div class="aux-section">
+        <div class="aux-title">AUX 4 - STEREO DELAY</div>
+        <div class="aux-control-group">
+          <div class="aux-control">
+            <div class="aux-knob" id="stereoDelayTimeLKnob" data-min="1" data-max="1000" data-value="150"><div class="aux-knob-indicator"></div></div>
+            <div class="aux-label">TIME L</div>
+            <input type="number" class="aux-value-input" id="stereoDelayTimeLInput" min="1" max="1000" value="150" style="width: 70px; height: 20px; text-align: center; font-size: 12px; border: 1px solid #666; background: #f0f0f0;">
+          </div>
+          <div class="aux-control">
+            <div class="aux-knob" id="stereoDelayTimeRKnob" data-min="1" data-max="1000" data-value="200"><div class="aux-knob-indicator"></div></div>
+            <div class="aux-label">TIME R</div>
+            <input type="number" class="aux-value-input" id="stereoDelayTimeRInput" min="1" max="1000" value="200" style="width: 70px; height: 20px; text-align: center; font-size: 12px; border: 1px solid #666; background: #f0f0f0;">
+          </div>
+          <div class="aux-control">
+            <div class="aux-knob" id="stereoDelayCrossFeedbackKnob" data-min="0" data-max="99.999" data-value="20"><div class="aux-knob-indicator"></div></div>
+            <div class="aux-label">CROSS-FB</div>
+            <div class="aux-value" id="stereoDelayCrossFeedbackValue">20%</div>
+          </div>
+          <div class="aux-control">
+            <div class="aux-knob" id="stereoDelayLevelKnob" data-min="0" data-max="100" data-value="100"><div class="aux-knob-indicator" style="transform: rotate(135deg);"></div></div>
+            <div class="aux-label">LEVEL</div>
+            <div class="aux-value" id="stereoDelayLevelValue">100%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ========== SWARM SEND LEVEL ==========
+    var SWARM_AUX_SEND_LEVEL = 0.7; // Level when aux button held
+
+    // ========== ORIGINAL CONSOLE CODE ==========
+    function initializeFaderDragging() {
+      var isDragging = false;
+      var currentFader = null;
+      var startY = 0;
+      var startTop = 0;
+
+      function getYPosition(e) {
+        return e.touches ? e.touches[0].clientY : e.clientY;
+      }
+
+      function startDrag(e) {
+        if (e.target.classList.contains('fader-handle') || e.target.classList.contains('master-handle')) {
+          isDragging = true;
+          currentFader = e.target;
+          startY = getYPosition(e);
+          startTop = parseInt(currentFader.style.top) || 65;
+          e.preventDefault();
+          document.body.style.userSelect = 'none';
+        }
+      }
+
+      function doDrag(e) {
+        if (!isDragging || !currentFader) return;
+        var y = getYPosition(e);
+        var deltaY = y - startY;
+        var newTop = startTop + deltaY;
+        newTop = Math.max(5, Math.min(195, newTop));
+        currentFader.style.top = newTop + 'px';
+        updateDbReadout(currentFader);
+        
+        var channel = currentFader.getAttribute('data-channel');
+        if (channel === 'master') {
+          var masterMuteBtn = document.querySelector('.master-fader .channel-btn.mute');
+          var level = calculateFaderGain(newTop);
+          var isMuted = masterMuteBtn.classList.contains('active');
+          masterGain.gain.setValueAtTime(isMuted ? 0.0 : level, audioContext.currentTime);
+        } else {
+          var channelIndex = parseInt(channel) - 1;
+          if (channels[channelIndex]) {
+            channels[channelIndex].updateGain();
+          }
+        }
+      }
+
+      function endDrag() {
+        if (isDragging) {
+          isDragging = false;
+          currentFader = null;
+          document.body.style.userSelect = '';
+        }
+      }
+
+      document.addEventListener('mousedown', startDrag);
+      document.addEventListener('mousemove', doDrag);
+      document.addEventListener('mouseup', endDrag);
+      document.addEventListener('touchstart', startDrag, { passive: false });
+      document.addEventListener('touchmove', doDrag, { passive: false });
+      document.addEventListener('touchend', endDrag);
+    }
+
+    var audioBuffers = new Array(24).fill(null);
+    var loadedCount = 0;
+    var isLoading = true;
+
+    function createFaders() {
+      var fadersContainer = document.getElementById('faders');
+
+      for (var i = 1; i <= 24; i++) {
+        var faderStrip = document.createElement('div');
+        faderStrip.className = 'fader-strip';
+        faderStrip.id = 'fader-strip-' + i;
+
+        faderStrip.innerHTML =
+          '<div class="ppm-meter">' +
+            '<div class="ppm-label"></div>' +
+            '<div class="ppm-bar">' +
+              '<div class="ppm-level" id="ppm-level-' + i + '" style="height: 90%;"></div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="fader-label">' + i + '</div>' +
+          '<div class="channel-aux-sends">' +
+            '<div class="aux-send-knob" id="aux-send-' + i + '-1" data-channel="' + i + '" data-aux="1">' +
+              '<div class="aux-send-indicator" style="transform: translateX(-50%) rotate(-135deg);"></div>' +
+            '</div>' +
+            '<div class="aux-send-knob" id="aux-send-' + i + '-2" data-channel="' + i + '" data-aux="2">' +
+              '<div class="aux-send-indicator" style="transform: translateX(-50%) rotate(-135deg);"></div>' +
+            '</div>' +
+            '<div class="aux-send-knob" id="aux-send-' + i + '-3" data-channel="' + i + '" data-aux="3">' +
+              '<div class="aux-send-indicator" style="transform: translateX(-50%) rotate(-135deg);"></div>' +
+            '</div>' +
+            '<div class="aux-send-knob" id="aux-send-' + i + '-4" data-channel="' + i + '" data-aux="4">' +
+              '<div class="aux-send-indicator" style="transform: translateX(-50%) rotate(-135deg);"></div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="channel-buttons">' +
+            '<button class="channel-btn solo">S</button>' +
+            '<button class="channel-btn mute" id="mute-btn-' + i + '">M</button>' +
+          '</div>' +
+          '<div class="pan-pot" data-channel="' + i + '" onclick="rotatePan(this)">' +
+            '<div class="pan-knob"></div>' +
+          '</div>' +
+          '<div class="fader-container">' +
+            '<div class="fader-track"></div>' +
+            '<div class="fader-handle" style="top: 45px" data-channel="' + i + '"></div>' +
+          '</div>' +
+          '<div class="db-readout" id="db-readout-' + i + '">0</div>' +
+          '<button class="upload-btn" onclick="triggerUpload(' + i + ')">&#8593;</button>' +
+          '<input type="file" class="upload-input" id="upload-' + i + '" accept="audio/*" onchange="handleUpload(event, ' + i + ')">';
+
+        fadersContainer.appendChild(faderStrip);
+      }
+
+      var masterFader = document.createElement('div');
+      masterFader.className = 'fader-strip master-fader';
+
+      masterFader.innerHTML =
+        '<div class="ppm-meter">' +
+          '<div class="ppm-label">PPM</div>' +
+          '<div class="ppm-bar">' +
+            '<div class="ppm-level" id="ppm-level-master" style="height: 90%;"></div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="fader-label">MIX</div>' +
+        '<div class="channel-buttons">' +
+          '<button class="channel-btn mute">C</button>' +
+        '</div>' +
+        '<div class="pan-pot" data-channel="master" onclick="rotatePan(this)">' +
+          '<div class="pan-knob"></div>' +
+        '</div>' +
+        '<div class="fader-container">' +
+          '<div class="fader-track"></div>' +
+          '<div class="fader-handle master-handle" style="top: 45px" data-channel="master"></div>' +
+        '</div>' +
+        '<div class="db-readout" id="db-readout-master">0</div>';
+
+      fadersContainer.appendChild(masterFader);
+    }
+
+    function initChannelStatus() {
+      var statusContainer = document.getElementById('channelStatus');
+      for (var i = 1; i <= 24; i++) {
+        var status = document.createElement('div');
+        status.className = 'channel-status';
+        status.id = 'status-' + i;
+        status.title = 'Track ' + i;
+        statusContainer.appendChild(status);
+      }
+    }
+
+    function updateLoadingProgress(channel, success) {
+      var statusElement = document.getElementById('status-' + channel);
+      if (success) {
+        statusElement.classList.add('loaded');
+        loadedCount++;
+      } else {
+        statusElement.classList.add('error');
+      }
+      
+      document.getElementById('progressText').textContent = loadedCount + '/24 loaded';
+      
+      if (loadedCount === 24 || loadedCount + document.querySelectorAll('.channel-status.error').length === 24) {
+        setTimeout(function () {
+          document.getElementById('loadingStatus').style.display = 'none';
+        }, 2000);
+        isLoading = false;
+      }
+    }
+
+    var audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    var channels = [];
+    var masterGain;
+    var masterAnalyserLeft, masterAnalyserRight;
+    var splitterNode, mergerNode;
+    var reverbNode, delayNode, reverb2Node, stereoDelayNode;
+    var aux1Bus, aux2Bus, aux3Bus, aux4Bus;
+    var isPlaying = false;
+    var audioStartTime = 0;
+    var isLooping = true;
+
+    var vuAnimationId;
+    var leftEnvelope = 0, rightEnvelope = 0;
+    var leftPreEnvelope = 0, rightPreEnvelope = 0;
+    var leftCurrentAmplitude = 0, rightCurrentAmplitude = 0;
+    var attackMs = 90;
+    var releaseMs = 90;
+    var scaleDb = -18;
+
+    function loadAudioFiles() {
+      var baseUrl = 'https://greghunter.co.uk/wp-content/uploads/2025/06/';
+      var loadPromises = [];
+      
+      for (var i = 1; i <= 24; i++) {
+        var url = baseUrl + 'TRACK' + i + '.wav';
+        loadPromises.push(loadSingleTrack(url, i));
+      }
+      
+      return Promise.allSettled(loadPromises);
+    }
+
+    function loadSingleTrack(url, trackNumber) {
+      return fetch(url)
+        .then(function (response) {
+          if (!response.ok) {
+            throw new Error('HTTP ' + response.status);
+          }
+          return response.arrayBuffer();
+        })
+        .then(function (arrayBuffer) {
+          return audioContext.decodeAudioData(arrayBuffer);
+        })
+        .then(function (audioBuffer) {
+          audioBuffers[trackNumber - 1] = audioBuffer;
+          updateLoadingProgress(trackNumber, true);
+          console.log('Track ' + trackNumber + ' loaded successfully');
+        })
+        .catch(function (error) {
+          console.warn('Failed to load Track ' + trackNumber + ':', error);
+          updateLoadingProgress(trackNumber, false);
+        });
+    }
+
+    function createAudioSource(trackNumber) {
+      var buffer = audioBuffers[trackNumber - 1];
+      if (!buffer) return null;
+      
+      var source = audioContext.createBufferSource();
+      source.buffer = buffer;
+      source.loop = false;
+      
+      source.onended = function () {
+        if (isPlaying) {
+          if (isLooping) {
+            var channel = channels.find(function (ch) { return ch.trackNumber === trackNumber; });
+            if (channel) {
+              var newSource = createAudioSource(trackNumber);
+              if (newSource) {
+                newSource.connect(channel.gain);
+                newSource.start();
+                channel.setAudioSource(newSource);
+              }
+            }
+          }
+        }
+      };
+      
+      return source;
+    }
+
+    function startAllTracks() {
+      if (isPlaying) return;
+      
+      isPlaying = true;
+      audioStartTime = audioContext.currentTime;
+      
+      channels.forEach(function (channel) {
+        if (!channel.trackNumber) return;
+        
+        if (audioBuffers[channel.trackNumber - 1]) {
+          var source = createAudioSource(channel.trackNumber);
+          if (source) {
+            source.connect(channel.gain);
+            source.start(audioStartTime);
+            channel.setAudioSource(source);
+          }
+        }
+      });
+      
+      updateAllAudioSources();
+      updatePlayButton();
+      
+      processVUMeters.lastTime = null;
+      processVUMeters();
+      updateVUAmplitudes();
+      processPPMMeters();
+    }
+
+    function stopAllTracks() {
+      isPlaying = false;
+      
+      channels.forEach(function (channel) {
+        if (!channel.trackNumber) return;
+        
+        var currentSource = channel.getAudioSource();
+        if (currentSource) {
+          currentSource.stop();
+          currentSource.disconnect();
+          channel.setAudioSource(null);
+        }
+      });
+      
+      if (vuAnimationId) {
+        cancelAnimationFrame(vuAnimationId);
+      }
+      
+      leftCurrentAmplitude = 0;
+      rightCurrentAmplitude = 0;
+      
+      processVUMeters.lastTime = performance.now();
+      vuAnimationId = requestAnimationFrame(processVUMeters);
+      
+      updatePlayButton();
+    }
+
+    function updatePlayButton() {
+      var playBtn = document.getElementById('playBtn');
+      if (isPlaying) {
+        playBtn.textContent = '\u23F8 PAUSE';
+        playBtn.classList.add('playing');
+      } else {
+        playBtn.textContent = '\u25B6 PLAY';
+        playBtn.classList.remove('playing');
+      }
+    }
+
+    function createReverb() {
+      var convolver = audioContext.createConvolver();
+      
+      return fetch('https://greghunter.co.uk/wp-content/uploads/2025/06/SPRINGIR2.wav')
+        .then(function (response) { return response.arrayBuffer(); })
+        .then(function (arrayBuffer) { return audioContext.decodeAudioData(arrayBuffer); })
+        .then(function (irBuffer) {
+          convolver.buffer = irBuffer;
+          console.log('Spring reverb IR loaded successfully');
+          convolver.updateReverb = function (size) {
+            console.log('Spring reverb size control: ' + size);
+          };
+          return convolver;
+        })
+        .catch(function (error) {
+          console.error('Failed to load spring reverb IR:', error);
+          convolver.updateReverb = function () {};
+          return convolver;
+        });
+    }
+
+    function createReverb2() {
+      var convolver = audioContext.createConvolver();
+      
+      function createPlateReverbIR(duration, decay) {
+        var sampleRate = audioContext.sampleRate;
+        var length = sampleRate * duration;
+        var impulse = audioContext.createBuffer(2, length, sampleRate);
+        
+        for (var channel = 0; channel < 2; channel++) {
+          var channelData = impulse.getChannelData(channel);
+          for (var i = 0; i < length; i++) {
+            var n = length - i;
+            var envelope = Math.pow(n / length, decay * 0.8);
+            var noise = (Math.random() * 2 - 1);
+            var freq1 = Math.sin(i * 0.0005) * 3.0;
+            var freq2 = Math.sin(i * 0.0006) * 3.0;
+            channelData[i] = noise * envelope + freq1 * envelope * 0.5 + freq2 * envelope * 0.3;
+          }
+        }
+        return impulse;
+      }
+      
+      convolver.buffer = createPlateReverbIR(3.0, 2.5);
+      
+      convolver.updateReverb = function (size) {
+        var duration = size / 10;
+        convolver.buffer = createPlateReverbIR(duration, 2.5);
+      };
+      
+      return convolver;
+    }
+
+    function createDelay() {
+      var delayInput = audioContext.createGain();
+      var delay = audioContext.createDelay(1.0);
+      var feedback = audioContext.createGain();
+      var wetGain = audioContext.createGain();
+      var dryGain = audioContext.createGain();
+      
+      delay.delayTime.value = 0.275;
+      feedback.gain.value = 0.35;
+      wetGain.gain.value = 1.0;
+      dryGain.gain.value = 1.0;
+      
+      delayInput.connect(dryGain);
+      delayInput.connect(delay);
+      delay.connect(feedback);
+      delay.connect(wetGain);
+      feedback.connect(delay);
+      
+      var outputGain = audioContext.createGain();
+      dryGain.connect(outputGain);
+      wetGain.connect(outputGain);
+      
+      return {
+        input: delayInput,
+        output: outputGain,
+        delayTime: delay.delayTime,
+        feedbackGain: feedback.gain,
+        wetLevel: wetGain.gain,
+        updateTime: function (timeMs) {
+          var timeSeconds = Math.max(0.001, Math.min(1.0, timeMs / 1000));
+          this.delayTime.setTargetAtTime(timeSeconds, audioContext.currentTime, 0.02);
+        },
+        updateFeedback: function (fbPercent) {
+          var fbGain = Math.max(0, Math.min(0.95, fbPercent / 100));
+          this.feedbackGain.setTargetAtTime(fbGain, audioContext.currentTime, 0.01);
+        },
+        updateLevel: function (levelPercent) {
+          var level = Math.max(0, Math.min(1.0, levelPercent / 100));
+          this.wetLevel.setTargetAtTime(level, audioContext.currentTime, 0.01);
+        }
+      };
+    }
+
+    function createParallelStereoDelay() {
+      var delayInput = audioContext.createGain();
+      var delayL = audioContext.createDelay(1.0);
+      var delayR = audioContext.createDelay(1.0);
+      var inputToLeftDelay = audioContext.createGain();
+      var inputToRightDelay = audioContext.createGain();
+      var crossFeedbackL = audioContext.createGain();
+      var crossFeedbackR = audioContext.createGain();
+      var selfFeedbackL = audioContext.createGain();
+      var selfFeedbackR = audioContext.createGain();
+      var wetGainL = audioContext.createGain();
+      var wetGainR = audioContext.createGain();
+      var dryGain = audioContext.createGain();
+      var merger = audioContext.createChannelMerger(2);
+      var outputGain = audioContext.createGain();
+      
+      delayL.delayTime.value = 0.15;
+      delayR.delayTime.value = 0.20;
+      inputToLeftDelay.gain.value = 1.0;
+      inputToRightDelay.gain.value = 1.0;
+      crossFeedbackL.gain.value = 0.2;
+      crossFeedbackR.gain.value = 0.2;
+      selfFeedbackL.gain.value = 0.3;
+      selfFeedbackR.gain.value = 0.3;
+      wetGainL.gain.value = 1.0;
+      wetGainR.gain.value = 1.0;
+      dryGain.gain.value = 1.0;
+      
+      delayInput.connect(inputToLeftDelay);
+      delayInput.connect(inputToRightDelay);
+      inputToLeftDelay.connect(delayL);
+      inputToRightDelay.connect(delayR);
+      delayL.connect(selfFeedbackL);
+      selfFeedbackL.connect(delayL);
+      delayR.connect(selfFeedbackR);
+      selfFeedbackR.connect(delayR);
+      delayL.connect(crossFeedbackR);
+      crossFeedbackR.connect(delayR);
+      delayR.connect(crossFeedbackL);
+      crossFeedbackL.connect(delayL);
+      delayL.connect(wetGainL);
+      delayR.connect(wetGainR);
+      wetGainL.connect(merger, 0, 0);
+      wetGainR.connect(merger, 0, 1);
+      delayInput.connect(dryGain);
+      dryGain.connect(outputGain);
+      merger.connect(outputGain);
+      
+      return {
+        input: delayInput,
+        output: outputGain,
+        updateTimeL: function (timeMs) {
+          var t = Math.max(0.001, Math.min(1.0, timeMs / 1000));
+          delayL.delayTime.setTargetAtTime(t, audioContext.currentTime, 0.1);
+        },
+        updateTimeR: function (timeMs) {
+          var t = Math.max(0.001, Math.min(1.0, timeMs / 1000));
+          delayR.delayTime.setTargetAtTime(t, audioContext.currentTime, 0.1);
+        },
+        updateCrossFeedback: function (fbPercent) {
+          var g = Math.max(0, Math.min(0.95, fbPercent / 100));
+          crossFeedbackL.gain.setTargetAtTime(g, audioContext.currentTime, 0.05);
+          crossFeedbackR.gain.setTargetAtTime(g, audioContext.currentTime, 0.05);
+        },
+        updateLevel: function (levelPercent) {
+          var l = Math.max(0, Math.min(1.0, levelPercent / 100));
+          outputGain.gain.setTargetAtTime(l, audioContext.currentTime, 0.03);
+        }
+      };
+    }
+
+    function processPPMMeters() {
+      if (!isPlaying) {
+        channels.forEach(function (channel) {
+          if (channel.trackNumber) {
+            channel.ppmPeakLevel *= 0.01;
+            updateChannelPPM(channel.trackNumber, channel.ppmPeakLevel);
+          }
+        });
+        if (channels.some(function (ch) { return ch.ppmPeakLevel > 0.001; })) {
+          requestAnimationFrame(processPPMMeters);
+        }
+        return;
+      }
+
+      channels.forEach(function (channel) {
+        if (!channel.trackNumber || !channel.ppmAnalyser) return;
+        
+        var bufferLength = channel.ppmAnalyser.frequencyBinCount;
+        var dataArray = new Uint8Array(bufferLength);
+        channel.ppmAnalyser.getByteFrequencyData(dataArray);
+        
+        var peak = 0;
+        for (var i = 0; i < bufferLength; i++) {
+          if (dataArray[i] > peak) peak = dataArray[i];
+        }
+        
+        var normalizedPeak = peak / 255;
+        
+        if (normalizedPeak > channel.ppmPeakLevel) {
+          channel.ppmPeakLevel = normalizedPeak;
+        } else {
+          channel.ppmPeakLevel *= 0.7;
+        }
+        
+        updateChannelPPM(channel.trackNumber, channel.ppmPeakLevel);
+      });
+      
+      requestAnimationFrame(processPPMMeters);
+    }
+
+    function updateChannelPPM(channel, peakLevel) {
+      var ppmLevel = document.getElementById('ppm-level-' + channel);
+      if (ppmLevel) {
+        var ppmHeight = 100 - (peakLevel * 85);
+        var clampedHeight = Math.max(5, Math.min(95, ppmHeight));
+        ppmLevel.style.height = clampedHeight + '%';
+      }
+    }
+
+    function updateVULevel(channel, amplitudeLevel) {
+      var scaleGain = Math.pow(10, -scaleDb / 20);
+      var adjustedAmplitude = amplitudeLevel * scaleGain;
+      var position = Math.max(0, Math.min(1.5, adjustedAmplitude));
+      
+      var arcCenterX = 75;
+      var arcCenterY = 60;
+      var radiusX = 55;
+      var radiusY = 35;
+      var arcStartX = 22;
+      var arcEndX = 127;
+
+      var angleStart = Math.acos((arcStartX - arcCenterX) / radiusX);
+      var angleEnd = Math.acos((arcEndX - arcCenterX) / radiusX);
+      var angle = angleStart + (angleEnd - angleStart) * (position / 1.5);
+      var x = arcCenterX + radiusX * Math.cos(angle);
+      var y = arcCenterY - radiusY * Math.sin(angle);
+
+      var sprite = document.getElementById(channel === 'left' ? 'vuSpriteLeft' : 'vuSpriteRight');
+      sprite.style.left = x + 'px';
+      sprite.style.top = y + 'px';
+
+      var needle = document.getElementById(channel === 'left' ? 'needleLineLeft' : 'needleLineRight');
+      var originX = arcCenterX;
+      var originY = arcCenterY + 32;
+      var dx = x - originX;
+      var dy = y - originY;
+      var tipX = originX + dx * 1.2;
+      var tipY = originY + dy * 1.2;
+
+      needle.setAttribute('x1', originX);
+      needle.setAttribute('y1', originY);
+      needle.setAttribute('x2', tipX);
+      needle.setAttribute('y2', tipY);
+    }
+
+    function processVUMeters() {
+      var now = performance.now();
+      var dt = processVUMeters.lastTime ? (now - processVUMeters.lastTime) / 1000 : 1 / 60;
+      processVUMeters.lastTime = now;
+
+      var attackCoeff = Math.exp(-dt / (attackMs / 1000));
+      var releaseCoeff = Math.exp(-dt / (releaseMs / 1000));
+      var preAttack = Math.exp(-dt / 0.05);
+      var preRelease = preAttack;
+
+      var leftAbsAvg = leftCurrentAmplitude * (Math.PI / 2);
+      if (leftAbsAvg > leftPreEnvelope) {
+        leftPreEnvelope = preAttack * leftPreEnvelope + (1 - preAttack) * leftAbsAvg;
+      } else {
+        leftPreEnvelope = preRelease * leftPreEnvelope + (1 - preRelease) * leftAbsAvg;
+      }
+      if (leftPreEnvelope > leftEnvelope) {
+        leftEnvelope = attackCoeff * leftEnvelope + (1 - attackCoeff) * leftPreEnvelope;
+      } else {
+        leftEnvelope = releaseCoeff * leftEnvelope + (1 - releaseCoeff) * leftPreEnvelope;
+      }
+
+      var rightAbsAvg = rightCurrentAmplitude * (Math.PI / 2);
+      if (rightAbsAvg > rightPreEnvelope) {
+        rightPreEnvelope = preAttack * rightPreEnvelope + (1 - preAttack) * rightAbsAvg;
+      } else {
+        rightPreEnvelope = preRelease * rightPreEnvelope + (1 - preRelease) * rightAbsAvg;
+      }
+      if (rightPreEnvelope > rightEnvelope) {
+        rightEnvelope = attackCoeff * rightEnvelope + (1 - attackCoeff) * rightPreEnvelope;
+      } else {
+        rightEnvelope = releaseCoeff * rightEnvelope + (1 - releaseCoeff) * rightPreEnvelope;
+      }
+
+      updateVULevel('left', leftEnvelope);
+      updateVULevel('right', rightEnvelope);
+
+      if (isPlaying || leftEnvelope > 0.001 || rightEnvelope > 0.001) {
+        vuAnimationId = requestAnimationFrame(processVUMeters);
+      }
+    }
+
+    function setupAudioRouting() {
+      masterGain = audioContext.createGain();
+      masterGain.gain.value = 1.0;
+      masterGain.connect(audioContext.destination);
+      
+      aux1Bus = audioContext.createGain();
+      aux2Bus = audioContext.createGain();
+      aux3Bus = audioContext.createGain();
+      aux4Bus = audioContext.createGain();
+      
+      return createReverb().then(function (rv) {
+        reverbNode = rv;
+        delayNode = createDelay();
+        reverb2Node = createReverb2();
+        stereoDelayNode = createParallelStereoDelay();
+        
+        var reverbReturn = audioContext.createGain();
+        var delayReturn = audioContext.createGain();
+        var reverb2Return = audioContext.createGain();
+        var stereoDelayReturn = audioContext.createGain();
+        
+        reverbReturn.gain.value = 1.0;
+        delayReturn.gain.value = 1.0;
+        reverb2Return.gain.value = 8.0;
+        stereoDelayReturn.gain.value = 1.0;
+        
+        aux1Bus.connect(reverbNode);
+        reverbNode.connect(reverbReturn);
+        reverbReturn.connect(masterGain);
+        
+        aux2Bus.connect(delayNode.input);
+        delayNode.output.connect(delayReturn);
+        delayReturn.connect(masterGain);
+        
+        aux3Bus.connect(reverb2Node);
+        reverb2Node.connect(reverb2Return);
+        reverb2Return.connect(masterGain);
+        
+        aux4Bus.connect(stereoDelayNode.input);
+        stereoDelayNode.output.connect(stereoDelayReturn);
+        stereoDelayReturn.connect(masterGain);
+        
+        window.reverbReturn = reverbReturn;
+        window.delayReturn = delayReturn;
+        window.reverb2Return = reverb2Return;
+        window.stereoDelayReturn = stereoDelayReturn;
+        
+        splitterNode = audioContext.createChannelSplitter(2);
+        var analyserLeft = audioContext.createAnalyser();
+        var analyserRight = audioContext.createAnalyser();
+        analyserLeft.fftSize = 2048;
+        analyserRight.fftSize = 2048;
+        analyserLeft.smoothingTimeConstant = 0;
+        analyserRight.smoothingTimeConstant = 0;
+        
+        masterGain.connect(splitterNode);
+        splitterNode.connect(analyserLeft, 0, 0);
+        splitterNode.connect(analyserRight, 1, 0);
+        
+        window.vuAnalyserLeft = analyserLeft;
+        window.vuAnalyserRight = analyserRight;
+        
+        window.updateVUAmplitudes = function () {
+          if (!isPlaying) return;
+          
+          var leftDataArray = new Float32Array(analyserLeft.fftSize);
+          analyserLeft.getFloatTimeDomainData(leftDataArray);
+          var leftSum = 0;
+          for (var i = 0; i < leftDataArray.length; i++) {
+            leftSum += Math.abs(leftDataArray[i]);
+          }
+          leftCurrentAmplitude = leftSum / leftDataArray.length;
+          
+          var rightDataArray = new Float32Array(analyserRight.fftSize);
+          analyserRight.getFloatTimeDomainData(rightDataArray);
+          var rightSum = 0;
+          for (var i = 0; i < rightDataArray.length; i++) {
+            rightSum += Math.abs(rightDataArray[i]);
+          }
+          rightCurrentAmplitude = rightSum / rightDataArray.length;
+          
+          requestAnimationFrame(window.updateVUAmplitudes);
+        };
+
+        var masterFader = document.querySelector('.master-handle');
+        var masterMuteBtn = document.querySelector('.master-fader .channel-btn.mute');
+
+        masterMuteBtn.addEventListener('click', function () {
+          masterMuteBtn.classList.toggle('active');
+          var top = parseFloat(masterFader.style.top) || 65;
+          var level = calculateFaderGain(top);
+          var isMuted = masterMuteBtn.classList.contains('active');
+          masterGain.gain.setValueAtTime(isMuted ? 0.0 : level, audioContext.currentTime);
+        });
+
+        for (var i = 1; i <= 24; i++) {
+          var gain = audioContext.createGain();
+          var panNode = audioContext.createStereoPanner();
+          var ppmAnalyser = audioContext.createAnalyser();
+          
+          var aux1Send = audioContext.createGain();
+          var aux2Send = audioContext.createGain();
+          var aux3Send = audioContext.createGain();
+          var aux4Send = audioContext.createGain();
+          aux1Send.gain.value = 0.0;
+          aux2Send.gain.value = 0.0;
+          aux3Send.gain.value = 0.0;
+          aux4Send.gain.value = 0.0;
+          
+          ppmAnalyser.fftSize = 256;
+          ppmAnalyser.smoothingTimeConstant = 0;
+          
+          gain.connect(ppmAnalyser);
+          gain.connect(aux1Send);
+          gain.connect(aux2Send);
+          gain.connect(aux3Send);
+          gain.connect(aux4Send);
+          gain.connect(panNode);
+          panNode.connect(masterGain);
+          
+          aux1Send.connect(aux1Bus);
+          aux2Send.connect(aux2Bus);
+          aux3Send.connect(aux3Bus);
+          aux4Send.connect(aux4Bus);
+
+          var fader = document.querySelector('.fader-handle[data-channel="' + i + '"]');
+          var muteBtn = document.querySelector('#mute-btn-' + i);
+          var soloBtn = document.querySelector('.fader-strip:nth-child(' + i + ') .channel-btn.solo');
+
+          var audioSource = null;
+
+          (function (chGain, chFader, chMuteBtn, chSoloBtn, chIdx, chAux1Send, chAux2Send, chAux3Send, chAux4Send) {
+            var localAudioSource = null;
+
+            var updateGain = function () {
+              var top = parseFloat(chFader.style.top) || 65;
+              var faderLevel = calculateFaderGain(top);
+              
+              var isMuted = chMuteBtn.classList.contains('active');
+              var isSolo = chSoloBtn.classList.contains('active');
+              var soloActive = soloModeActive();
+              var shouldBeAudible = !isMuted;
+              if (soloActive) {
+                shouldBeAudible = !isMuted;
+                if (!isSolo) {
+                  shouldBeAudible = false;
+                }
+              }
+
+              if (shouldBeAudible) {
+                chGain.gain.setValueAtTime(faderLevel * Math.SQRT2, audioContext.currentTime);
+              } else {
+                chGain.gain.setValueAtTime(0.0, audioContext.currentTime);
+              }
+              
+              updateDbReadout(chFader);
+              updateChannelAuxSends(channels[chIdx - 1]);
+            };
+
+            channels.push({ 
+              gain: chGain, 
+              soloBtn: chSoloBtn, 
+              muteBtn: chMuteBtn, 
+              fader: chFader, 
+              panNode: panNode, 
+              ppmAnalyser: ppmAnalyser,
+              aux1Send: chAux1Send,
+              aux2Send: chAux2Send,
+              aux3Send: chAux3Send,
+              aux4Send: chAux4Send,
+              aux1SendLevel: 0,
+              aux2SendLevel: 0,
+              aux3SendLevel: 0,
+              aux4SendLevel: 0,
+              ppmPeakLevel: 0,
+              updateGain: updateGain, 
+              trackNumber: chIdx,
+              getAudioSource: function () { return localAudioSource; },
+              setAudioSource: function (source) { localAudioSource = source; }
+            });
+          })(gain, fader, muteBtn, soloBtn, i, aux1Send, aux2Send, aux3Send, aux4Send);
+        }
+      });
+    }
+
+    function soloModeActive() {
+      return channels.some(function (ch) { return ch.soloBtn && ch.soloBtn.classList.contains('active'); });
+    }
+
+    function updateAllAudioSources() {
+      if (!isPlaying) return;
+      channels.forEach(function (channel) {
+        if (!channel.trackNumber) return;
+        channel.updateGain();
+      });
+    }
+
+    function initializeButtons() {
+      document.addEventListener('click', function (e) {
+        if (e.target.classList.contains('channel-btn')) {
+          e.target.classList.toggle('active');
+          if (!e.target.closest('.master-fader')) {
+            updateAllAudioSources();
+          }
+        }
+      });
+      
+      document.getElementById('playBtn').addEventListener('click', function () {
+        if (audioContext.state === 'suspended') {
+          audioContext.resume();
+        }
+        if (isPlaying) {
+          stopAllTracks();
+        } else {
+          startAllTracks();
+        }
+      });
+      
+      document.getElementById('stopBtn').addEventListener('click', function () {
+        stopAllTracks();
+      });
+      
+      document.getElementById('loopBtn').addEventListener('click', function () {
+        isLooping = !isLooping;
+        var loopBtn = document.getElementById('loopBtn');
+        if (isLooping) {
+          loopBtn.classList.add('active');
+          loopBtn.textContent = '\uD83D\uDD01 LOOP';
+        } else {
+          loopBtn.classList.remove('active');
+          loopBtn.textContent = '\uD83D\uDD01 LOOP OFF';
+        }
+      });
+    }
+
+    function calculateFaderGain(top) {
+      var minTop = 5;
+      var maxTop = 195;
+      var unityTop = 45;
+      var clampedTop = Math.max(minTop, Math.min(maxTop, top));
+      
+      if (clampedTop >= maxTop - 5) {
+        return 0.0;
+      } else if (clampedTop <= unityTop) {
+        var t = (unityTop - clampedTop) / (unityTop - minTop);
+        return 1.0 + (t * 2.16);
+      } else {
+        var t2 = (clampedTop - unityTop) / (maxTop - unityTop);
+        return Math.pow(10, -t2 * 3);
+      }
+    }
+
+    function calculateDbFromPosition(top) {
+      var gain = calculateFaderGain(top);
+      if (gain <= 0.001) return '\u2212\u221E';
+      var dB = 20 * Math.log10(gain);
+      if (dB >= 0) {
+        return '+' + dB.toFixed(1);
+      }
+      return dB.toFixed(1);
+    }
+
+    function updateDbReadout(faderHandle) {
+      var channel = faderHandle.getAttribute('data-channel');
+      var readout = document.getElementById('db-readout-' + channel);
+      var top = parseInt(faderHandle.style.top) || 65;
+      readout.textContent = calculateDbFromPosition(top);
+    }
+
+    function initializePanDragging() {
+      var isDragging = false;
+      var currentPan = null;
+      var startX = 0;
+      var startRotation = 0;
+
+      function startPanDrag(e) {
+        var target = e.target;
+        if (target.classList.contains('pan-pot') || target.parentElement.classList.contains('pan-pot')) {
+          isDragging = true;
+          currentPan = target.classList.contains('pan-pot') ? target : target.parentElement;
+          startX = e.touches ? e.touches[0].clientX : e.clientX;
+          var knob = currentPan.querySelector('.pan-knob');
+          var transform = knob.style.transform || '';
+          var match = transform.match(/rotate\((-?\d+)deg\)/);
+          startRotation = match ? parseInt(match[1]) : 0;
+          e.preventDefault();
+        }
+      }
+
+      function doPanDrag(e) {
+        if (!isDragging || !currentPan) return;
+        var clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        var deltaX = clientX - startX;
+        var newRotation = startRotation + (deltaX * 2);
+        newRotation = Math.max(-135, Math.min(135, newRotation));
+        var knob = currentPan.querySelector('.pan-knob');
+        knob.style.transform = 'translateX(-50%) rotate(' + newRotation + 'deg)';
+        updatePanDisplay(currentPan, newRotation);
+        if (e.touches) e.preventDefault();
+      }
+
+      function endPanDrag() {
+        isDragging = false;
+        currentPan = null;
+      }
+
+      document.addEventListener('mousedown', startPanDrag);
+      document.addEventListener('mousemove', doPanDrag);
+      document.addEventListener('mouseup', endPanDrag);
+      document.addEventListener('touchstart', startPanDrag, { passive: false });
+      document.addEventListener('touchmove', doPanDrag, { passive: false });
+      document.addEventListener('touchend', endPanDrag);
+    }
+
+    function updatePanDisplay(panPot, rotation) {
+      var channel = panPot.getAttribute('data-channel');
+      var panPosition = rotation / 135;
+      var channelIndex = parseInt(channel) - 1;
+      if (channels[channelIndex]) {
+        channels[channelIndex].panNode.pan.value = panPosition;
+      }
+    }
+
+    function rotatePan(panPot) {
+      var knob = panPot.querySelector('.pan-knob');
+      var currentRotation = 0;
+      var transform = knob.style.transform || '';
+      var match = transform.match(/rotate\((-?\d+)deg\)/);
+      if (match) currentRotation = parseInt(match[1]);
+      var newRotation = currentRotation + 30;
+      if (newRotation > 135) newRotation = -135;
+      knob.style.transform = 'translateX(-50%) rotate(' + newRotation + 'deg)';
+      updatePanDisplay(panPot, newRotation);
+    }
+
+    function updateChannelAuxSends(channel) {
+      if (!channel || !channel.trackNumber) return;
+      
+      var isMuted = channel.muteBtn.classList.contains('active');
+      var isSolo = channel.soloBtn.classList.contains('active');
+      var soloActive = soloModeActive();
+      var shouldBeAudible = !isMuted;
+      if (soloActive) {
+        if (!isSolo) shouldBeAudible = false;
+      }
+      
+      var faderTop = parseFloat(channel.fader.style.top) || 65;
+      var faderLevel = calculateFaderGain(faderTop);
+      var finalGain = shouldBeAudible ? faderLevel : 0.0;
+      
+      var aux1Level = (channel.aux1SendLevel || 0) * finalGain;
+      var aux2Level = (channel.aux2SendLevel || 0) * finalGain;
+      var aux3Level = (channel.aux3SendLevel || 0) * finalGain;
+      var aux4Level = (channel.aux4SendLevel || 0) * finalGain;
+      
+      if (channel.aux1Send) channel.aux1Send.gain.setValueAtTime(aux1Level, audioContext.currentTime);
+      if (channel.aux2Send) channel.aux2Send.gain.setValueAtTime(aux2Level, audioContext.currentTime);
+      if (channel.aux3Send) channel.aux3Send.gain.setValueAtTime(aux3Level, audioContext.currentTime);
+      if (channel.aux4Send) channel.aux4Send.gain.setValueAtTime(aux4Level, audioContext.currentTime);
+    }
+
+    function initializeAuxSendDragging() {
+      var isDragging = false;
+      var currentAuxSend = null;
+      var startX = 0;
+      var startRotation = 0;
+
+      function startAuxDrag(e) {
+        var target = e.target.closest('.aux-send-knob');
+        if (target) {
+          isDragging = true;
+          currentAuxSend = target;
+          startX = e.touches ? e.touches[0].clientX : e.clientX;
+          var indicator = currentAuxSend.querySelector('.aux-send-indicator');
+          var transform = indicator.style.transform || 'translateX(-50%) rotate(-135deg)';
+          var match = transform.match(/rotate\((-?\d+)deg\)/);
+          startRotation = match ? parseInt(match[1]) : -135;
+          e.preventDefault();
+        }
+      }
+
+      function doAuxDrag(e) {
+        if (!isDragging || !currentAuxSend) return;
+        var clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        var deltaX = clientX - startX;
+        var newRotation = startRotation + (deltaX * 2);
+        newRotation = Math.max(-135, Math.min(135, newRotation));
+        var indicator = currentAuxSend.querySelector('.aux-send-indicator');
+        indicator.style.transform = 'translateX(-50%) rotate(' + newRotation + 'deg)';
+        updateAuxSendLevel(currentAuxSend, newRotation);
+        if (e.touches) e.preventDefault();
+      }
+
+      function endAuxDrag() {
+        isDragging = false;
+        currentAuxSend = null;
+      }
+
+      document.addEventListener('mousedown', startAuxDrag);
+      document.addEventListener('mousemove', doAuxDrag);
+      document.addEventListener('mouseup', endAuxDrag);
+      document.addEventListener('touchstart', startAuxDrag, { passive: false });
+      document.addEventListener('touchmove', doAuxDrag, { passive: false });
+      document.addEventListener('touchend', endAuxDrag);
+    }
+
+    function updateAuxSendLevel(auxKnob, rotation) {
+      var channel = parseInt(auxKnob.getAttribute('data-channel'));
+      var auxNum = parseInt(auxKnob.getAttribute('data-aux'));
+      var baseSendLevel = (rotation + 135) / 270;
+      var channelObj = channels[channel - 1];
+      
+      if (channelObj) {
+        if (auxNum === 1) channelObj.aux1SendLevel = baseSendLevel;
+        if (auxNum === 2) channelObj.aux2SendLevel = baseSendLevel;
+        if (auxNum === 3) channelObj.aux3SendLevel = baseSendLevel;
+        if (auxNum === 4) channelObj.aux4SendLevel = baseSendLevel;
+        updateChannelAuxSends(channelObj);
+      }
+    }
+
+    function initializeAuxControls() {
+      var isDragging = false;
+      var currentKnob = null;
+      var startX = 0;
+      var startRotation = 0;
+
+      function startKnobDrag(e) {
+        var target = e.target.closest('.aux-knob');
+        if (target) {
+          isDragging = true;
+          currentKnob = target;
+          startX = e.touches ? e.touches[0].clientX : e.clientX;
+          var indicator = currentKnob.querySelector('.aux-knob-indicator');
+          var transform = indicator.style.transform || '';
+          var match = transform.match(/rotate\((-?\d+)deg\)/);
+          startRotation = match ? parseInt(match[1]) : 0;
+          e.preventDefault();
+        }
+      }
+
+      function doKnobDrag(e) {
+        if (!isDragging || !currentKnob) return;
+        var clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        var deltaX = clientX - startX;
+        var newRotation = startRotation + (deltaX * 2);
+        newRotation = Math.max(-135, Math.min(135, newRotation));
+        var indicator = currentKnob.querySelector('.aux-knob-indicator');
+        indicator.style.transform = 'rotate(' + newRotation + 'deg)';
+        updateAuxParameter(currentKnob, newRotation);
+        if (e.touches) e.preventDefault();
+      }
+
+      function endKnobDrag() {
+        isDragging = false;
+        currentKnob = null;
+      }
+
+      document.addEventListener('mousedown', startKnobDrag);
+      document.addEventListener('mousemove', doKnobDrag);
+      document.addEventListener('mouseup', endKnobDrag);
+      document.addEventListener('touchstart', startKnobDrag, { passive: false });
+      document.addEventListener('touchmove', doKnobDrag, { passive: false });
+      document.addEventListener('touchend', endKnobDrag);
+    }
+
+    function updateAuxParameter(knob, rotation) {
+      var id = knob.id;
+      var min = parseFloat(knob.dataset.min);
+      var max = parseFloat(knob.dataset.max);
+      var range = max - min;
+      var value = min + ((rotation + 135) / 270) * range;
+      knob.dataset.value = value.toFixed(1);
+      
+      if (id === 'reverbSizeKnob') {
+        reverbNode.updateReverb(value);
+        document.getElementById('reverbSizeValue').textContent = value.toFixed(0) + 'm / ' + (value / 10).toFixed(1) + 's';
+      } else if (id === 'reverbLevelKnob') {
+        if (window.reverbReturn) window.reverbReturn.gain.setTargetAtTime(value / 100, audioContext.currentTime, 0.01);
+        document.getElementById('reverbLevelValue').textContent = value.toFixed(0) + '%';
+      } else if (id === 'delayTimeKnob') {
+        delayNode.updateTime(value);
+        document.getElementById('delayTimeInput').value = value.toFixed(0);
+      } else if (id === 'delayFeedbackKnob') {
+        delayNode.updateFeedback(value);
+        document.getElementById('delayFeedbackValue').textContent = value.toFixed(0) + '%';
+      } else if (id === 'delayLevelKnob') {
+        if (window.delayReturn) window.delayReturn.gain.setTargetAtTime(value / 100, audioContext.currentTime, 0.01);
+        document.getElementById('delayLevelValue').textContent = value.toFixed(0) + '%';
+      } else if (id === 'reverb2SizeKnob') {
+        reverb2Node.updateReverb(value);
+        document.getElementById('reverb2SizeValue').textContent = value.toFixed(0) + 'm';
+      } else if (id === 'reverb2LevelKnob') {
+        if (window.reverb2Return) window.reverb2Return.gain.setTargetAtTime((value / 100) * 8.0, audioContext.currentTime, 0.01);
+        document.getElementById('reverb2LevelValue').textContent = value.toFixed(0) + '%';
+      } else if (id === 'stereoDelayTimeLKnob') {
+        stereoDelayNode.updateTimeL(value);
+        document.getElementById('stereoDelayTimeLInput').value = value.toFixed(0);
+      } else if (id === 'stereoDelayTimeRKnob') {
+        stereoDelayNode.updateTimeR(value);
+        document.getElementById('stereoDelayTimeRInput').value = value.toFixed(0);
+      } else if (id === 'stereoDelayCrossFeedbackKnob') {
+        stereoDelayNode.updateCrossFeedback(value);
+        document.getElementById('stereoDelayCrossFeedbackValue').textContent = value.toFixed(0) + '%';
+      } else if (id === 'stereoDelayLevelKnob') {
+        if (window.stereoDelayReturn) window.stereoDelayReturn.gain.setTargetAtTime(value / 100, audioContext.currentTime, 0.01);
+        document.getElementById('stereoDelayLevelValue').textContent = value.toFixed(0) + '%';
+      }
+    }
+
+    function triggerUpload(channel) {
+      document.getElementById('upload-' + channel).click();
+    }
+
+    function handleUpload(event, channel) {
+      var file = event.target.files[0];
+      if (!file) return;
+      
+      file.arrayBuffer().then(function (arrayBuffer) {
+        return audioContext.decodeAudioData(arrayBuffer);
+      }).then(function (audioBuffer) {
+        audioBuffers[channel - 1] = audioBuffer;
+        
+        if (isPlaying) {
+          var channelObj = channels[channel - 1];
+          if (channelObj) {
+            var currentSource = channelObj.getAudioSource();
+            if (currentSource) {
+              currentSource.stop();
+              currentSource.disconnect();
+            }
+            var newSource = createAudioSource(channel);
+            if (newSource) {
+              newSource.connect(channelObj.gain);
+              newSource.start();
+              channelObj.setAudioSource(newSource);
+            }
+          }
+        }
+      }).catch(function (error) {
+        console.error('Error uploading file for channel ' + channel + ':', error);
+      });
+    }
+
+    function updateVUAmplitudes() {
+      if (window.updateVUAmplitudes) {
+        window.updateVUAmplitudes();
+      }
+    }
+
+    // ========== SWARM INTEGRATION ==========
+    function initSwarm() {
+      var socket = io();
+      var statusEl = document.getElementById('swarm-status');
+      var indicatorEl = document.getElementById('swarm-indicator');
+      var userCountEl = document.getElementById('swarm-user-count');
+
+      socket.on('connect', function () {
+        statusEl.textContent = 'Connected';
+        statusEl.classList.add('connected');
+        indicatorEl.classList.add('connected');
+        socket.emit('join-master');
+      });
+
+      socket.on('disconnect', function () {
+        statusEl.textContent = 'Disconnected';
+        statusEl.classList.remove('connected');
+        indicatorEl.classList.remove('connected');
+      });
+
+      socket.on('users-update', function (users) {
+        userCountEl.textContent = users.length + ' user' + (users.length === 1 ? '' : 's');
+      });
+
+      // SWARM CUT: toggle mute on the channel
+      socket.on('cut-update', function (data) {
+        var ch = data.channel;
+        var muteBtn = document.getElementById('mute-btn-' + ch);
+        var strip = document.getElementById('fader-strip-' + ch);
+        
+        if (muteBtn) {
+          if (data.state) {
+            muteBtn.classList.add('active');
+            if (strip) strip.classList.add('swarm-cut-active');
+          } else {
+            muteBtn.classList.remove('active');
+            if (strip) strip.classList.remove('swarm-cut-active');
+          }
+          // Update audio
+          if (channels[ch - 1]) {
+            channels[ch - 1].updateGain();
+          }
+        }
+      });
+
+      // SWARM AUX: momentary aux send
+      socket.on('aux-update', function (data) {
+        var ch = data.channel;
+        var auxNum = 0;
+        if (data.aux === 'aux1') auxNum = 1;
+        if (data.aux === 'aux2') auxNum = 2;
+        if (data.aux === 'aux3') auxNum = 3;
+        if (data.aux === 'aux4') auxNum = 4;
+        
+        if (auxNum === 0) return;
+        
+        var channelObj = channels[ch - 1];
+        if (!channelObj) return;
+        
+        var auxKnob = document.getElementById('aux-send-' + ch + '-' + auxNum);
+        
+        if (data.state) {
+          // AUX DOWN: set send level
+          if (auxNum === 1) channelObj.aux1SendLevel = SWARM_AUX_SEND_LEVEL;
+          if (auxNum === 2) channelObj.aux2SendLevel = SWARM_AUX_SEND_LEVEL;
+          if (auxNum === 3) channelObj.aux3SendLevel = SWARM_AUX_SEND_LEVEL;
+          if (auxNum === 4) channelObj.aux4SendLevel = SWARM_AUX_SEND_LEVEL;
+          
+          if (auxKnob) {
+            auxKnob.classList.add('swarm-active');
+            var indicator = auxKnob.querySelector('.aux-send-indicator');
+            if (indicator) indicator.style.transform = 'translateX(-50%) rotate(54deg)';
+          }
+        } else {
+          // AUX UP: cut send back to zero
+          if (auxNum === 1) channelObj.aux1SendLevel = 0;
+          if (auxNum === 2) channelObj.aux2SendLevel = 0;
+          if (auxNum === 3) channelObj.aux3SendLevel = 0;
+          if (auxNum === 4) channelObj.aux4SendLevel = 0;
+          
+          if (auxKnob) {
+            auxKnob.classList.remove('swarm-active');
+            var indicator2 = auxKnob.querySelector('.aux-send-indicator');
+            if (indicator2) indicator2.style.transform = 'translateX(-50%) rotate(-135deg)';
+          }
+        }
+        
+        updateChannelAuxSends(channelObj);
+      });
+
+      // Receive full mixer state
+      socket.on('mixer-state', function (state) {
+        for (var ch = 1; ch <= 24; ch++) {
+          if (state[ch].cut) {
+            var muteBtn = document.getElementById('mute-btn-' + ch);
+            if (muteBtn) muteBtn.classList.add('active');
+            var strip = document.getElementById('fader-strip-' + ch);
+            if (strip) strip.classList.add('swarm-cut-active');
+            if (channels[ch - 1]) channels[ch - 1].updateGain();
+          }
+        }
+      });
+    }
+
+    // ========== INIT ==========
+    function init() {
+      createFaders();
+      initChannelStatus();
+      loadAudioFiles().then(function () {
+        return setupAudioRouting();
+      }).then(function () {
+        initializeButtons();
+        initializeFaderDragging();
+        initializePanDragging();
+        initializeAuxControls();
+        initializeAuxSendDragging();
+        
+        updateVULevel('left', 0);
+        updateVULevel('right', 0);
+        
+        channels.forEach(function (channel) {
+          if (channel.fader) updateDbReadout(channel.fader);
+        });
+        
+        var masterFader = document.querySelector('.master-handle');
+        if (masterFader) updateDbReadout(masterFader);
+        
+        // Start SWARM connection
+        initSwarm();
+        
+        console.log('SWARM Master Console initialized');
+      });
+    }
+
+    document.addEventListener('click', function () {
+      if (audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+    }, { once: true });
+
+    init();
+
+    // Numerical input handlers
+    document.getElementById('delayTimeInput').addEventListener('input', function (e) {
+      var timeMs = parseInt(e.target.value);
+      if (timeMs >= 1) {
+        if (timeMs <= 1000) {
+          delayNode.updateTime(timeMs);
+        }
+      }
+    });
+
+    document.getElementById('stereoDelayTimeLInput').addEventListener('input', function (e) {
+      var timeMs = parseInt(e.target.value);
+      if (timeMs >= 1) {
+        if (timeMs <= 1000) {
+          stereoDelayNode.updateTimeL(timeMs);
+        }
+      }
+    });
+
+    document.getElementById('stereoDelayTimeRInput').addEventListener('input', function (e) {
+      var timeMs = parseInt(e.target.value);
+      if (timeMs >= 1) {
+        if (timeMs <= 1000) {
+          stereoDelayNode.updateTimeR(timeMs);
+        }
+      }
+    });
+  </script>
+</body>
+</html>

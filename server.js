@@ -14,15 +14,22 @@ var io = socketIO(server, {
 
 app.use(express.static(path.join(__dirname, "public")));
 
+// Serve master page
+app.get("/master", function (req, res) {
+  res.sendFile(path.join(__dirname, "public", "master.html"));
+});
+
 var connectedUsers = {};
 
-// Mixer state: 24 channels, each with cut (toggle), aux1, aux2 (momentary)
+// Mixer state: 24 channels, each with cut (toggle), aux1-4 (momentary)
 var mixerState = {};
 for (var i = 1; i <= 24; i++) {
   mixerState[i] = {
     cut: false,
     aux1: false,
-    aux2: false
+    aux2: false,
+    aux3: false,
+    aux4: false
   };
 }
 
@@ -38,6 +45,11 @@ io.on("connection", function (socket) {
     socket.emit("mixer-state", mixerState);
   });
 
+  socket.on("join-master", function () {
+    console.log("Master connected: " + socket.id);
+    socket.emit("mixer-state", mixerState);
+  });
+
   socket.on("cut-toggle", function (channel) {
     mixerState[channel].cut = !mixerState[channel].cut;
     io.emit("cut-update", { channel: channel, state: mixerState[channel].cut });
@@ -45,12 +57,12 @@ io.on("connection", function (socket) {
 
   socket.on("aux-down", function (data) {
     mixerState[data.channel][data.aux] = true;
-    socket.broadcast.emit("aux-update", { channel: data.channel, aux: data.aux, state: true });
+    io.emit("aux-update", { channel: data.channel, aux: data.aux, state: true });
   });
 
   socket.on("aux-up", function (data) {
     mixerState[data.channel][data.aux] = false;
-    socket.broadcast.emit("aux-update", { channel: data.channel, aux: data.aux, state: false });
+    io.emit("aux-update", { channel: data.channel, aux: data.aux, state: false });
   });
 
   socket.on("disconnect", function () {

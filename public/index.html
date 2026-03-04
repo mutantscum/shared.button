@@ -190,6 +190,20 @@
             color: #fff;
             box-shadow: 0 0 12px rgba(0, 170, 68, 0.4);
         }
+
+        .ch-btn.aux3-btn.active {
+            background: #9933cc;
+            border-color: #bb55ee;
+            color: #fff;
+            box-shadow: 0 0 12px rgba(153, 51, 204, 0.4);
+        }
+
+        .ch-btn.aux4-btn.active {
+            background: #cc7700;
+            border-color: #ff9933;
+            color: #fff;
+            box-shadow: 0 0 12px rgba(204, 119, 0, 0.4);
+        }
     </style>
 </head>
 <body>
@@ -231,26 +245,26 @@
             select.appendChild(opt);
         }
 
-        // Sizing function — calculates button size to fit viewport
+        // Sizing function
         function calcSizes() {
             var vw = window.innerWidth;
             var vh = window.innerHeight;
             var statusHeight = 40;
-            var rowCount = 4; // header + cut + aux1 + aux2
+            var rowCount = 6;
             var rowGap = 2;
             var padding = 24;
             var labelWidth = 46;
 
             var availH = vh - statusHeight - padding - (rowCount * rowGap);
             var btnH = Math.floor(availH / rowCount);
-            if (btnH < 36) { btnH = 36; }
-            if (btnH > 80) { btnH = 80; }
+            if (btnH < 32) { btnH = 32; }
+            if (btnH > 70) { btnH = 70; }
 
             var availW = vw - labelWidth - padding;
             var gap = 3;
             var btnW = Math.floor((availW - (23 * gap)) / 24);
-            if (btnW < 36) { btnW = 36; }
-            if (btnW > 80) { btnW = 80; }
+            if (btnW < 32) { btnW = 32; }
+            if (btnW > 70) { btnW = 70; }
 
             var size = Math.min(btnW, btnH);
 
@@ -268,7 +282,7 @@
                 btns[i].style.height = size + "px";
             }
 
-            var fontSize = Math.max(8, Math.floor(size * 0.18));
+            var fontSize = Math.max(7, Math.floor(size * 0.16));
             for (var i = 0; i < btns.length; i++) {
                 btns[i].style.fontSize = fontSize + "px";
             }
@@ -310,10 +324,11 @@
 
         makeRow("CH", "", "");
         makeRow("CUT", "cut-btn", "CUT");
-        makeRow("AUX1", "aux1-btn", "AUX1");
-        makeRow("AUX2", "aux2-btn", "AUX2");
+        makeRow("RVB1", "aux1-btn", "RVB1");
+        makeRow("DLY", "aux2-btn", "DLY");
+        makeRow("RVB2", "aux3-btn", "RVB2");
+        makeRow("SDLY", "aux4-btn", "SDLY");
 
-        // Initial size + resize listener
         calcSizes();
         window.addEventListener("resize", calcSizes);
 
@@ -355,7 +370,7 @@
             })(cutBtns[i]);
         }
 
-        // AUX momentary
+        // AUX momentary buttons
         function setupMomentary(className, auxName) {
             var btns = document.querySelectorAll("." + className);
             for (var i = 0; i < btns.length; i++) {
@@ -399,6 +414,8 @@
 
         setupMomentary("aux1-btn", "aux1");
         setupMomentary("aux2-btn", "aux2");
+        setupMomentary("aux3-btn", "aux3");
+        setupMomentary("aux4-btn", "aux4");
 
         // Receive full mixer state on join
         socket.on("mixer-state", function (state) {
@@ -423,10 +440,12 @@
 
         socket.on("aux-update", function (data) {
             var btn = document.querySelector("." + data.aux + '-btn[data-channel="' + data.channel + '"]');
-            if (data.state) {
-                btn.classList.add("active");
-            } else {
-                btn.classList.remove("active");
+            if (btn) {
+                if (data.state) {
+                    btn.classList.add("active");
+                } else {
+                    btn.classList.remove("active");
+                }
             }
         });
 

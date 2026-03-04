@@ -19,6 +19,26 @@ app.get("/master", function (req, res) {
   res.sendFile(path.join(__dirname, "public", "master.html"));
 });
 
+// Audio proxy to avoid CORS issues
+var https = require("https");
+app.get("/audio/:filename", function (req, res) {
+  var filename = req.params.filename;
+  var url = "https://greghunter.co.uk/audio/" + encodeURIComponent(filename);
+  
+  https.get(url, function (proxyRes) {
+    if (proxyRes.statusCode !== 200) {
+      res.status(proxyRes.statusCode).send("Not found");
+      return;
+    }
+    res.setHeader("Content-Type", proxyRes.headers["content-type"] || "audio/wav");
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    proxyRes.pipe(res);
+  }).on("error", function (err) {
+    console.error("Proxy error:", err);
+    res.status(500).send("Proxy error");
+  });
+});
+
 var connectedUsers = {};
 
 // Mixer state: 24 channels, each with cut (toggle), aux1-4 (momentary)

@@ -929,7 +929,7 @@
     var scaleDb = -18;
 
     function loadAudioFiles() {
-      var baseUrl = 'https://greghunter.co.uk/wp-content/uploads/2025/06/';
+      var baseUrl = 'https://greghunter.co.uk/audio/';
       var loadPromises = [];
       
       for (var i = 1; i <= 24; i++) {
@@ -1058,7 +1058,7 @@
     function createReverb() {
       var convolver = audioContext.createConvolver();
       
-      return fetch('https://greghunter.co.uk/wp-content/uploads/2025/06/SPRINGIR2.wav')
+      return fetch('https://greghunter.co.uk/audio/SPRINGIR2.wav')
         .then(function (response) { return response.arrayBuffer(); })
         .then(function (arrayBuffer) { return audioContext.decodeAudioData(arrayBuffer); })
         .then(function (irBuffer) {

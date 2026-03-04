@@ -17,13 +17,11 @@
         html, body {
             width: 100%;
             height: 100%;
-            overflow: hidden;
             font-family: monospace;
             background: #1a1a1a;
             color: #eee;
             -webkit-user-select: none;
             user-select: none;
-            touch-action: manipulation;
         }
 
         #join-screen {
@@ -31,7 +29,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100%;
+            height: 100vh;
             text-align: center;
             padding: 20px;
         }
@@ -84,8 +82,9 @@
         #mixer-screen {
             display: none;
             flex-direction: column;
-            height: 100%;
-            width: 100%;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
         }
 
         #status-bar {
@@ -108,8 +107,10 @@
 
         .mixer-area {
             flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
             overflow-x: auto;
-            overflow-y: auto;
             -webkit-overflow-scrolling: touch;
             padding: 8px 0;
         }
@@ -123,39 +124,36 @@
         .grid-row {
             display: flex;
             align-items: center;
-            margin-bottom: 6px;
+            margin-bottom: 2px;
         }
 
         .row-label {
-            width: 44px;
-            min-width: 44px;
+            width: 40px;
+            min-width: 40px;
             font-size: 9px;
             color: #555;
             letter-spacing: 1px;
             text-transform: uppercase;
             text-align: right;
-            padding-right: 8px;
+            padding-right: 6px;
         }
 
         .row-cells {
             display: flex;
-            gap: 4px;
+            gap: 3px;
         }
 
         .ch-label {
-            width: 52px;
-            min-width: 52px;
             text-align: center;
             font-size: 11px;
             color: #888;
-            padding: 4px 0;
             font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .ch-btn {
-            width: 52px;
-            min-width: 52px;
-            height: 52px;
             border: 2px solid #444;
             border-radius: 6px;
             background: #2a2a2a;
@@ -191,45 +189,6 @@
             border-color: #33dd66;
             color: #fff;
             box-shadow: 0 0 12px rgba(0, 170, 68, 0.4);
-        }
-
-        @media (max-width: 480px) {
-            .ch-btn {
-                width: 58px;
-                min-width: 58px;
-                height: 58px;
-                font-size: 10px;
-                border-radius: 8px;
-            }
-
-            .ch-label {
-                width: 58px;
-                min-width: 58px;
-            }
-
-            .row-label {
-                font-size: 8px;
-                width: 36px;
-                min-width: 36px;
-                padding-right: 4px;
-            }
-        }
-
-        @media (min-width: 1024px) {
-            .ch-btn {
-                width: 48px;
-                min-width: 48px;
-                height: 48px;
-            }
-
-            .ch-label {
-                width: 48px;
-                min-width: 48px;
-            }
-
-            .grid-row {
-                margin-bottom: 4px;
-            }
         }
     </style>
 </head>
@@ -272,6 +231,49 @@
             select.appendChild(opt);
         }
 
+        // Sizing function — calculates button size to fit viewport
+        function calcSizes() {
+            var vw = window.innerWidth;
+            var vh = window.innerHeight;
+            var statusHeight = 40;
+            var rowCount = 4; // header + cut + aux1 + aux2
+            var rowGap = 2;
+            var padding = 24;
+            var labelWidth = 46;
+
+            var availH = vh - statusHeight - padding - (rowCount * rowGap);
+            var btnH = Math.floor(availH / rowCount);
+            if (btnH < 36) { btnH = 36; }
+            if (btnH > 80) { btnH = 80; }
+
+            var availW = vw - labelWidth - padding;
+            var gap = 3;
+            var btnW = Math.floor((availW - (23 * gap)) / 24);
+            if (btnW < 36) { btnW = 36; }
+            if (btnW > 80) { btnW = 80; }
+
+            var size = Math.min(btnW, btnH);
+
+            var labels = document.querySelectorAll(".ch-label");
+            for (var i = 0; i < labels.length; i++) {
+                labels[i].style.width = size + "px";
+                labels[i].style.minWidth = size + "px";
+                labels[i].style.height = Math.floor(size * 0.5) + "px";
+            }
+
+            var btns = document.querySelectorAll(".ch-btn");
+            for (var i = 0; i < btns.length; i++) {
+                btns[i].style.width = size + "px";
+                btns[i].style.minWidth = size + "px";
+                btns[i].style.height = size + "px";
+            }
+
+            var fontSize = Math.max(8, Math.floor(size * 0.18));
+            for (var i = 0; i < btns.length; i++) {
+                btns[i].style.fontSize = fontSize + "px";
+            }
+        }
+
         // Build mixer grid
         var grid = document.getElementById("mixer-grid");
 
@@ -311,6 +313,10 @@
         makeRow("AUX1", "aux1-btn", "AUX1");
         makeRow("AUX2", "aux2-btn", "AUX2");
 
+        // Initial size + resize listener
+        calcSizes();
+        window.addEventListener("resize", calcSizes);
+
         // Join
         document.getElementById("join-btn").addEventListener("click", function () {
             var selected = document.getElementById("user-select").value;
@@ -322,6 +328,7 @@
             document.getElementById("join-screen").style.display = "none";
             document.getElementById("mixer-screen").style.display = "flex";
             document.getElementById("user-info").textContent = userId;
+            calcSizes();
         });
 
         // CUT toggle
@@ -405,7 +412,6 @@
             }
         });
 
-        // Receive cut toggle
         socket.on("cut-update", function (data) {
             var cutBtn = document.querySelector('.cut-btn[data-channel="' + data.channel + '"]');
             if (data.state) {
@@ -415,7 +421,6 @@
             }
         });
 
-        // Receive aux momentary
         socket.on("aux-update", function (data) {
             var btn = document.querySelector("." + data.aux + '-btn[data-channel="' + data.channel + '"]');
             if (data.state) {
@@ -425,7 +430,6 @@
             }
         });
 
-        // User count and grey out taken
         socket.on("users-update", function (users) {
             document.getElementById("user-count").textContent = users.length + " user" + (users.length === 1 ? "" : "s");
 
@@ -441,7 +445,6 @@
             }
         });
 
-        // Connection status
         socket.on("connect", function () {
             document.getElementById("connection-status").textContent = "Connected";
             document.getElementById("connection-status").style.color = "#4f4";

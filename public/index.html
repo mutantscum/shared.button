@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Shared Button</title>
+    <title>SWARM</title>
     <style>
         * {
             margin: 0;
@@ -15,24 +15,31 @@
             font-family: monospace;
             background: #1a1a1a;
             color: #eee;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
+            min-height: 100vh;
             -webkit-user-select: none;
             user-select: none;
         }
 
         #join-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
             text-align: center;
         }
 
         #join-screen h1 {
-            font-size: 24px;
-            margin-bottom: 30px;
+            font-size: 28px;
+            margin-bottom: 8px;
             font-weight: normal;
+            letter-spacing: 4px;
+        }
+
+        .subtitle {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 30px;
             letter-spacing: 2px;
         }
 
@@ -64,71 +71,134 @@
             cursor: pointer;
             text-transform: uppercase;
             letter-spacing: 2px;
-            display: block;
-            margin: 0 auto;
         }
 
-        #button-screen {
+        #mixer-screen {
             display: none;
-            text-align: center;
-            width: 100%;
-            height: 100%;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
         }
 
         #status-bar {
-            position: fixed;
+            position: sticky;
             top: 0;
-            left: 0;
-            right: 0;
-            padding: 10px 20px;
+            z-index: 10;
+            padding: 8px 16px;
             background: #222;
             border-bottom: 1px solid #333;
-            font-size: 12px;
+            font-size: 11px;
             color: #888;
             display: flex;
             justify-content: space-between;
+            align-items: center;
         }
 
-        #big-button {
-            width: 260px;
-            height: 260px;
-            border-radius: 50%;
-            background: #333;
-            border: 4px solid #555;
+        #status-bar .title {
+            font-size: 14px;
+            color: #ff8800;
+            letter-spacing: 3px;
+        }
+
+        .mixer-body {
+            padding: 12px 8px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .row-label {
+            font-size: 10px;
+            color: #555;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            padding: 8px 8px 4px 8px;
+        }
+
+        .channel-header-row {
+            display: flex;
+            gap: 4px;
+            padding: 0 4px;
+            min-width: max-content;
+        }
+
+        .ch-label {
+            width: 56px;
+            min-width: 56px;
+            text-align: center;
+            font-size: 10px;
+            color: #666;
+            padding: 6px 0;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 4px;
+            padding: 0 4px;
+            min-width: max-content;
+        }
+
+        .ch-btn {
+            width: 56px;
+            min-width: 56px;
+            height: 48px;
+            border: 2px solid #444;
+            border-radius: 4px;
+            background: #2a2a2a;
+            color: #666;
+            font-family: monospace;
+            font-size: 9px;
+            font-weight: bold;
+            letter-spacing: 1px;
             cursor: pointer;
-            transition: background 0.05s, border-color 0.05s, box-shadow 0.05s;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-family: monospace;
-            font-size: 14px;
-            color: #888;
-            text-transform: uppercase;
-            letter-spacing: 3px;
+            transition: background 0.05s, border-color 0.05s, color 0.05s;
             touch-action: none;
         }
 
-        #big-button.active {
-            background: #ff8800;
-            border-color: #ffaa44;
-            box-shadow: 0 0 60px rgba(255, 136, 0, 0.5);
-            color: #111;
+        .ch-btn.cut-btn.active {
+            background: #cc0000;
+            border-color: #ff3333;
+            color: #fff;
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
         }
 
-        #user-label {
-            margin-top: 30px;
-            font-size: 14px;
-            color: #666;
+        .ch-btn.aux1-btn.active {
+            background: #0077cc;
+            border-color: #33aaff;
+            color: #fff;
+            box-shadow: 0 0 10px rgba(0, 119, 204, 0.3);
+        }
+
+        .ch-btn.aux2-btn.active {
+            background: #00aa44;
+            border-color: #33dd66;
+            color: #fff;
+            box-shadow: 0 0 10px rgba(0, 170, 68, 0.3);
+        }
+
+        .scroll-container {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .scroll-inner {
+            min-width: max-content;
+        }
+
+        .scroll-hint {
+            text-align: center;
+            font-size: 10px;
+            color: #444;
+            padding: 12px;
+            letter-spacing: 1px;
         }
     </style>
 </head>
 <body>
 
     <div id="join-screen">
-        <h1>SHARED BUTTON</h1>
+        <h1>SWARM</h1>
+        <div class="subtitle">24-CH MIXER CONTROL</div>
         <select id="user-select">
             <option value="">Select user...</option>
         </select>
@@ -136,19 +206,31 @@
         <button id="join-btn">Connect</button>
     </div>
 
-    <div id="button-screen">
+    <div id="mixer-screen">
         <div id="status-bar">
+            <span class="title">SWARM</span>
             <span id="connection-status">Connecting...</span>
+            <span id="user-info"></span>
             <span id="user-count">0 users</span>
         </div>
-        <div id="big-button">HOLD</div>
-        <div id="user-label"></div>
+
+        <div class="scroll-container" id="scroll-container">
+            <div class="scroll-inner" id="scroll-inner">
+                <div class="channel-header-row" id="header-row"></div>
+                <div class="row-label">CUT</div>
+                <div class="button-row" id="cut-row"></div>
+                <div class="row-label">AUX 1</div>
+                <div class="button-row" id="aux1-row"></div>
+                <div class="row-label">AUX 2</div>
+                <div class="button-row" id="aux2-row"></div>
+            </div>
+        </div>
+        <div class="scroll-hint">swipe to scroll channels</div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
         var socket = io();
-        var isPressed = false;
         var userId = null;
 
         // Populate user dropdown 1-100
@@ -160,7 +242,42 @@
             select.appendChild(opt);
         }
 
-        // Join button
+        // Build 24 channel strips
+        var headerRow = document.getElementById("header-row");
+        var cutRow = document.getElementById("cut-row");
+        var aux1Row = document.getElementById("aux1-row");
+        var aux2Row = document.getElementById("aux2-row");
+
+        for (var ch = 1; ch <= 24; ch++) {
+            // Channel number header
+            var label = document.createElement("div");
+            label.className = "ch-label";
+            label.textContent = ch;
+            headerRow.appendChild(label);
+
+            // CUT button (toggle)
+            var cutBtn = document.createElement("div");
+            cutBtn.className = "ch-btn cut-btn";
+            cutBtn.setAttribute("data-channel", ch);
+            cutBtn.textContent = "CUT";
+            cutRow.appendChild(cutBtn);
+
+            // AUX 1 button (momentary)
+            var aux1Btn = document.createElement("div");
+            aux1Btn.className = "ch-btn aux1-btn";
+            aux1Btn.setAttribute("data-channel", ch);
+            aux1Btn.textContent = "AUX1";
+            aux1Row.appendChild(aux1Btn);
+
+            // AUX 2 button (momentary)
+            var aux2Btn = document.createElement("div");
+            aux2Btn.className = "ch-btn aux2-btn";
+            aux2Btn.setAttribute("data-channel", ch);
+            aux2Btn.textContent = "AUX2";
+            aux2Row.appendChild(aux2Btn);
+        }
+
+        // Join
         document.getElementById("join-btn").addEventListener("click", function () {
             var selected = document.getElementById("user-select").value;
             if (!selected) {
@@ -169,66 +286,115 @@
             userId = selected;
             socket.emit("join", userId);
             document.getElementById("join-screen").style.display = "none";
-            document.getElementById("button-screen").style.display = "flex";
-            document.getElementById("user-label").textContent = userId;
+            document.getElementById("mixer-screen").style.display = "flex";
+            document.getElementById("user-info").textContent = userId;
         });
 
-        // Button interaction
-        var btn = document.getElementById("big-button");
+        // CUT toggle — click/tap toggles
+        var cutBtns = document.querySelectorAll(".cut-btn");
+        for (var i = 0; i < cutBtns.length; i++) {
+            (function (btn) {
+                var tapped = false;
 
-        function pressDown() {
-            if (isPressed) {
-                return;
-            }
-            isPressed = true;
-            btn.classList.add("active");
-            socket.emit("button-down");
+                btn.addEventListener("touchend", function (e) {
+                    e.preventDefault();
+                    tapped = true;
+                    var ch = parseInt(btn.getAttribute("data-channel"));
+                    socket.emit("cut-toggle", ch);
+                });
+
+                btn.addEventListener("click", function () {
+                    if (tapped) {
+                        tapped = false;
+                        return;
+                    }
+                    var ch = parseInt(btn.getAttribute("data-channel"));
+                    socket.emit("cut-toggle", ch);
+                });
+            })(cutBtns[i]);
         }
 
-        function pressUp() {
-            if (!isPressed) {
-                return;
+        // AUX momentary buttons
+        function setupMomentary(className, auxName) {
+            var btns = document.querySelectorAll("." + className);
+            for (var i = 0; i < btns.length; i++) {
+                (function (btn) {
+                    var pressed = false;
+                    var ch = parseInt(btn.getAttribute("data-channel"));
+
+                    function down() {
+                        if (pressed) { return; }
+                        pressed = true;
+                        btn.classList.add("active");
+                        socket.emit("aux-down", { channel: ch, aux: auxName });
+                    }
+
+                    function up() {
+                        if (!pressed) { return; }
+                        pressed = false;
+                        btn.classList.remove("active");
+                        socket.emit("aux-up", { channel: ch, aux: auxName });
+                    }
+
+                    btn.addEventListener("mousedown", down);
+                    btn.addEventListener("mouseup", up);
+                    btn.addEventListener("mouseleave", up);
+
+                    btn.addEventListener("touchstart", function (e) {
+                        e.preventDefault();
+                        down();
+                    });
+                    btn.addEventListener("touchend", function (e) {
+                        e.preventDefault();
+                        up();
+                    });
+                    btn.addEventListener("touchcancel", function (e) {
+                        e.preventDefault();
+                        up();
+                    });
+                })(btns[i]);
             }
-            isPressed = false;
-            btn.classList.remove("active");
-            socket.emit("button-up");
         }
 
-        // Mouse events
-        btn.addEventListener("mousedown", pressDown);
-        btn.addEventListener("mouseup", pressUp);
-        btn.addEventListener("mouseleave", pressUp);
+        setupMomentary("aux1-btn", "aux1");
+        setupMomentary("aux2-btn", "aux2");
 
-        // Touch events
-        btn.addEventListener("touchstart", function (e) {
-            e.preventDefault();
-            pressDown();
+        // Receive full mixer state on join
+        socket.on("mixer-state", function (state) {
+            for (var ch = 1; ch <= 24; ch++) {
+                var cutBtn = document.querySelector('.cut-btn[data-channel="' + ch + '"]');
+                if (state[ch].cut) {
+                    cutBtn.classList.add("active");
+                } else {
+                    cutBtn.classList.remove("active");
+                }
+            }
         });
 
-        btn.addEventListener("touchend", function (e) {
-            e.preventDefault();
-            pressUp();
+        // Receive cut toggle updates
+        socket.on("cut-update", function (data) {
+            var cutBtn = document.querySelector('.cut-btn[data-channel="' + data.channel + '"]');
+            if (data.state) {
+                cutBtn.classList.add("active");
+            } else {
+                cutBtn.classList.remove("active");
+            }
         });
 
-        btn.addEventListener("touchcancel", function (e) {
-            e.preventDefault();
-            pressUp();
-        });
-
-        // Receive state from server
-        socket.on("button-state", function (state) {
-            if (state) {
+        // Receive aux momentary updates
+        socket.on("aux-update", function (data) {
+            var btn = document.querySelector("." + data.aux + '-btn[data-channel="' + data.channel + '"]');
+            if (data.state) {
                 btn.classList.add("active");
             } else {
                 btn.classList.remove("active");
             }
         });
 
-        // User count updates and grey out taken users
+        // User count and grey out taken users
         socket.on("users-update", function (users) {
             document.getElementById("user-count").textContent = users.length + " user" + (users.length === 1 ? "" : "s");
 
-            // Grey out taken users in dropdown
             var options = document.getElementById("user-select").options;
             for (var i = 1; i < options.length; i++) {
                 if (users.indexOf(options[i].value) !== -1) {

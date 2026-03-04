@@ -14,30 +14,43 @@ var io = socketIO(server, {
 
 app.use(express.static(path.join(__dirname, "public")));
 
-var buttonState = false;
 var connectedUsers = {};
+
+// Mixer state: 24 channels, each with cut (toggle), aux1, aux2 (momentary)
+var mixerState = {};
+for (var i = 1; i <= 24; i++) {
+  mixerState[i] = {
+    cut: false,
+    aux1: false,
+    aux2: false
+  };
+}
 
 io.on("connection", function (socket) {
   console.log("User connected: " + socket.id);
 
-  // Send taken users list on first connect
   socket.emit("users-update", Object.values(connectedUsers));
 
   socket.on("join", function (userId) {
     connectedUsers[socket.id] = userId;
     console.log("User " + userId + " joined");
     io.emit("users-update", Object.values(connectedUsers));
-    socket.emit("button-state", buttonState);
+    socket.emit("mixer-state", mixerState);
   });
 
-  socket.on("button-down", function () {
-    buttonState = true;
-    socket.broadcast.emit("button-state", true);
+  socket.on("cut-toggle", function (channel) {
+    mixerState[channel].cut = !mixerState[channel].cut;
+    io.emit("cut-update", { channel: channel, state: mixerState[channel].cut });
   });
 
-  socket.on("button-up", function () {
-    buttonState = false;
-    socket.broadcast.emit("button-state", false);
+  socket.on("aux-down", function (data) {
+    mixerState[data.channel][data.aux] = true;
+    socket.broadcast.emit("aux-update", { channel: data.channel, aux: data.aux, state: true });
+  });
+
+  socket.on("aux-up", function (data) {
+    mixerState[data.channel][data.aux] = false;
+    socket.broadcast.emit("aux-update", { channel: data.channel, aux: data.aux, state: false });
   });
 
   socket.on("disconnect", function () {

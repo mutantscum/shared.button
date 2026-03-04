@@ -2,22 +2,28 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <title>SWARM</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        body {
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
             font-family: monospace;
             background: #1a1a1a;
             color: #eee;
-            min-height: 100vh;
             -webkit-user-select: none;
             user-select: none;
+            touch-action: manipulation;
         }
 
         #join-screen {
@@ -25,8 +31,9 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
+            height: 100%;
             text-align: center;
+            padding: 20px;
         }
 
         #join-screen h1 {
@@ -46,13 +53,14 @@
         #user-select {
             font-family: monospace;
             font-size: 18px;
-            padding: 12px 20px;
+            padding: 14px 20px;
             background: #333;
             color: #eee;
             border: 1px solid #555;
-            border-radius: 4px;
+            border-radius: 8px;
             margin-bottom: 20px;
-            width: 200px;
+            width: 220px;
+            -webkit-appearance: none;
         }
 
         #user-select option:disabled {
@@ -63,11 +71,11 @@
         #join-btn {
             font-family: monospace;
             font-size: 16px;
-            padding: 14px 40px;
+            padding: 16px 50px;
             background: #ff8800;
             color: #111;
             border: none;
-            border-radius: 4px;
+            border-radius: 8px;
             cursor: pointer;
             text-transform: uppercase;
             letter-spacing: 2px;
@@ -76,13 +84,13 @@
         #mixer-screen {
             display: none;
             flex-direction: column;
+            height: 100%;
+            width: 100%;
         }
 
         #status-bar {
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            padding: 8px 16px;
+            flex-shrink: 0;
+            padding: 8px 12px;
             background: #222;
             border-bottom: 1px solid #333;
             font-size: 11px;
@@ -98,51 +106,60 @@
             letter-spacing: 3px;
         }
 
-        .mixer-body {
-            padding: 12px 8px;
+        .mixer-area {
+            flex: 1;
             overflow-x: auto;
+            overflow-y: auto;
             -webkit-overflow-scrolling: touch;
+            padding: 8px 0;
+        }
+
+        .mixer-grid {
+            display: inline-block;
+            min-width: max-content;
+            padding: 0 8px;
+        }
+
+        .grid-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 6px;
         }
 
         .row-label {
-            font-size: 10px;
+            width: 44px;
+            min-width: 44px;
+            font-size: 9px;
             color: #555;
-            letter-spacing: 2px;
+            letter-spacing: 1px;
             text-transform: uppercase;
-            padding: 8px 8px 4px 8px;
+            text-align: right;
+            padding-right: 8px;
         }
 
-        .channel-header-row {
+        .row-cells {
             display: flex;
             gap: 4px;
-            padding: 0 4px;
-            min-width: max-content;
         }
 
         .ch-label {
-            width: 56px;
-            min-width: 56px;
+            width: 52px;
+            min-width: 52px;
             text-align: center;
-            font-size: 10px;
-            color: #666;
-            padding: 6px 0;
-        }
-
-        .button-row {
-            display: flex;
-            gap: 4px;
-            padding: 0 4px;
-            min-width: max-content;
+            font-size: 11px;
+            color: #888;
+            padding: 4px 0;
+            font-weight: bold;
         }
 
         .ch-btn {
-            width: 56px;
-            min-width: 56px;
-            height: 48px;
+            width: 52px;
+            min-width: 52px;
+            height: 52px;
             border: 2px solid #444;
-            border-radius: 4px;
+            border-radius: 6px;
             background: #2a2a2a;
-            color: #666;
+            color: #555;
             font-family: monospace;
             font-size: 9px;
             font-weight: bold;
@@ -151,46 +168,68 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: background 0.05s, border-color 0.05s, color 0.05s;
             touch-action: none;
+            -webkit-touch-callout: none;
         }
 
         .ch-btn.cut-btn.active {
             background: #cc0000;
             border-color: #ff3333;
             color: #fff;
-            box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
+            box-shadow: 0 0 12px rgba(255, 0, 0, 0.4);
         }
 
         .ch-btn.aux1-btn.active {
             background: #0077cc;
             border-color: #33aaff;
             color: #fff;
-            box-shadow: 0 0 10px rgba(0, 119, 204, 0.3);
+            box-shadow: 0 0 12px rgba(0, 119, 204, 0.4);
         }
 
         .ch-btn.aux2-btn.active {
             background: #00aa44;
             border-color: #33dd66;
             color: #fff;
-            box-shadow: 0 0 10px rgba(0, 170, 68, 0.3);
+            box-shadow: 0 0 12px rgba(0, 170, 68, 0.4);
         }
 
-        .scroll-container {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
+        @media (max-width: 480px) {
+            .ch-btn {
+                width: 58px;
+                min-width: 58px;
+                height: 58px;
+                font-size: 10px;
+                border-radius: 8px;
+            }
+
+            .ch-label {
+                width: 58px;
+                min-width: 58px;
+            }
+
+            .row-label {
+                font-size: 8px;
+                width: 36px;
+                min-width: 36px;
+                padding-right: 4px;
+            }
         }
 
-        .scroll-inner {
-            min-width: max-content;
-        }
+        @media (min-width: 1024px) {
+            .ch-btn {
+                width: 48px;
+                min-width: 48px;
+                height: 48px;
+            }
 
-        .scroll-hint {
-            text-align: center;
-            font-size: 10px;
-            color: #444;
-            padding: 12px;
-            letter-spacing: 1px;
+            .ch-label {
+                width: 48px;
+                min-width: 48px;
+            }
+
+            .grid-row {
+                margin-bottom: 4px;
+            }
         }
     </style>
 </head>
@@ -214,18 +253,9 @@
             <span id="user-count">0 users</span>
         </div>
 
-        <div class="scroll-container" id="scroll-container">
-            <div class="scroll-inner" id="scroll-inner">
-                <div class="channel-header-row" id="header-row"></div>
-                <div class="row-label">CUT</div>
-                <div class="button-row" id="cut-row"></div>
-                <div class="row-label">AUX 1</div>
-                <div class="button-row" id="aux1-row"></div>
-                <div class="row-label">AUX 2</div>
-                <div class="button-row" id="aux2-row"></div>
-            </div>
+        <div class="mixer-area">
+            <div class="mixer-grid" id="mixer-grid"></div>
         </div>
-        <div class="scroll-hint">swipe to scroll channels</div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
@@ -242,40 +272,44 @@
             select.appendChild(opt);
         }
 
-        // Build 24 channel strips
-        var headerRow = document.getElementById("header-row");
-        var cutRow = document.getElementById("cut-row");
-        var aux1Row = document.getElementById("aux1-row");
-        var aux2Row = document.getElementById("aux2-row");
+        // Build mixer grid
+        var grid = document.getElementById("mixer-grid");
 
-        for (var ch = 1; ch <= 24; ch++) {
-            // Channel number header
+        function makeRow(labelText, btnClass, btnLabel) {
+            var row = document.createElement("div");
+            row.className = "grid-row";
+
             var label = document.createElement("div");
-            label.className = "ch-label";
-            label.textContent = ch;
-            headerRow.appendChild(label);
+            label.className = "row-label";
+            label.textContent = labelText;
+            row.appendChild(label);
 
-            // CUT button (toggle)
-            var cutBtn = document.createElement("div");
-            cutBtn.className = "ch-btn cut-btn";
-            cutBtn.setAttribute("data-channel", ch);
-            cutBtn.textContent = "CUT";
-            cutRow.appendChild(cutBtn);
+            var cells = document.createElement("div");
+            cells.className = "row-cells";
 
-            // AUX 1 button (momentary)
-            var aux1Btn = document.createElement("div");
-            aux1Btn.className = "ch-btn aux1-btn";
-            aux1Btn.setAttribute("data-channel", ch);
-            aux1Btn.textContent = "AUX1";
-            aux1Row.appendChild(aux1Btn);
+            for (var ch = 1; ch <= 24; ch++) {
+                if (labelText === "CH") {
+                    var chLabel = document.createElement("div");
+                    chLabel.className = "ch-label";
+                    chLabel.textContent = ch;
+                    cells.appendChild(chLabel);
+                } else {
+                    var btn = document.createElement("div");
+                    btn.className = "ch-btn " + btnClass;
+                    btn.setAttribute("data-channel", ch);
+                    btn.textContent = btnLabel;
+                    cells.appendChild(btn);
+                }
+            }
 
-            // AUX 2 button (momentary)
-            var aux2Btn = document.createElement("div");
-            aux2Btn.className = "ch-btn aux2-btn";
-            aux2Btn.setAttribute("data-channel", ch);
-            aux2Btn.textContent = "AUX2";
-            aux2Row.appendChild(aux2Btn);
+            row.appendChild(cells);
+            grid.appendChild(row);
         }
+
+        makeRow("CH", "", "");
+        makeRow("CUT", "cut-btn", "CUT");
+        makeRow("AUX1", "aux1-btn", "AUX1");
+        makeRow("AUX2", "aux2-btn", "AUX2");
 
         // Join
         document.getElementById("join-btn").addEventListener("click", function () {
@@ -290,7 +324,7 @@
             document.getElementById("user-info").textContent = userId;
         });
 
-        // CUT toggle — click/tap toggles
+        // CUT toggle
         var cutBtns = document.querySelectorAll(".cut-btn");
         for (var i = 0; i < cutBtns.length; i++) {
             (function (btn) {
@@ -314,7 +348,7 @@
             })(cutBtns[i]);
         }
 
-        // AUX momentary buttons
+        // AUX momentary
         function setupMomentary(className, auxName) {
             var btns = document.querySelectorAll("." + className);
             for (var i = 0; i < btns.length; i++) {
@@ -371,7 +405,7 @@
             }
         });
 
-        // Receive cut toggle updates
+        // Receive cut toggle
         socket.on("cut-update", function (data) {
             var cutBtn = document.querySelector('.cut-btn[data-channel="' + data.channel + '"]');
             if (data.state) {
@@ -381,7 +415,7 @@
             }
         });
 
-        // Receive aux momentary updates
+        // Receive aux momentary
         socket.on("aux-update", function (data) {
             var btn = document.querySelector("." + data.aux + '-btn[data-channel="' + data.channel + '"]');
             if (data.state) {
@@ -391,7 +425,7 @@
             }
         });
 
-        // User count and grey out taken users
+        // User count and grey out taken
         socket.on("users-update", function (users) {
             document.getElementById("user-count").textContent = users.length + " user" + (users.length === 1 ? "" : "s");
 

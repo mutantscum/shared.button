@@ -18,10 +18,11 @@
             width: 100%;
             height: 100%;
             font-family: monospace;
-            background: #1a1a1a;
+            background: #0a0a0a;
             color: #eee;
             -webkit-user-select: none;
             user-select: none;
+            overflow: hidden;
         }
 
         #join-screen {
@@ -39,11 +40,12 @@
             margin-bottom: 8px;
             font-weight: normal;
             letter-spacing: 4px;
+            color: #ff6600;
         }
 
         .subtitle {
             font-size: 12px;
-            color: #666;
+            color: #555;
             margin-bottom: 30px;
             letter-spacing: 2px;
         }
@@ -52,9 +54,9 @@
             font-family: monospace;
             font-size: 18px;
             padding: 14px 20px;
-            background: #333;
+            background: #1a1a1a;
             color: #eee;
-            border: 1px solid #555;
+            border: 1px solid #444;
             border-radius: 8px;
             margin-bottom: 20px;
             width: 220px;
@@ -62,21 +64,22 @@
         }
 
         #user-select option:disabled {
-            color: #555;
-            background: #2a2a2a;
+            color: #444;
+            background: #111;
         }
 
         #join-btn {
             font-family: monospace;
             font-size: 16px;
             padding: 16px 50px;
-            background: #ff8800;
-            color: #111;
+            background: #ff6600;
+            color: #000;
             border: none;
             border-radius: 8px;
             cursor: pointer;
             text-transform: uppercase;
             letter-spacing: 2px;
+            font-weight: bold;
         }
 
         #mixer-screen {
@@ -89,20 +92,21 @@
 
         #status-bar {
             flex-shrink: 0;
-            padding: 8px 12px;
-            background: #222;
-            border-bottom: 1px solid #333;
-            font-size: 11px;
-            color: #888;
+            padding: 4px 12px;
+            background: #111;
+            border-bottom: 1px solid #ff6600;
+            font-size: 10px;
+            color: #666;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
         #status-bar .title {
-            font-size: 14px;
-            color: #ff8800;
+            font-size: 12px;
+            color: #ff6600;
             letter-spacing: 3px;
+            font-weight: bold;
         }
 
         .mixer-area {
@@ -110,56 +114,63 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-            padding: 8px 0;
+            align-items: center;
+            padding: 6px;
         }
 
         .mixer-grid {
-            display: inline-block;
-            min-width: max-content;
-            padding: 0 8px;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            gap: 4px;
         }
 
         .grid-row {
             display: flex;
             align-items: center;
-            margin-bottom: 2px;
+            flex: 1;
+            gap: 4px;
         }
 
         .row-label {
-            width: 40px;
-            min-width: 40px;
+            width: 36px;
+            min-width: 36px;
             font-size: 9px;
             color: #555;
             letter-spacing: 1px;
             text-transform: uppercase;
             text-align: right;
-            padding-right: 6px;
+            padding-right: 4px;
         }
 
         .row-cells {
             display: flex;
-            gap: 3px;
+            gap: 4px;
+            flex: 1;
+            height: 100%;
         }
 
         .ch-label {
+            flex: 1;
             text-align: center;
-            font-size: 11px;
-            color: #888;
+            font-size: 16px;
+            color: #ff6600;
             font-weight: bold;
             display: flex;
             align-items: center;
             justify-content: center;
+            letter-spacing: 2px;
         }
 
         .ch-btn {
-            border: 2px solid #444;
-            border-radius: 6px;
-            background: #2a2a2a;
-            color: #555;
+            flex: 1;
+            border: 3px solid #333;
+            border-radius: 8px;
+            background: #1a1a1a;
+            color: #444;
             font-family: monospace;
-            font-size: 9px;
+            font-size: 14px;
             font-weight: bold;
             letter-spacing: 1px;
             cursor: pointer;
@@ -168,41 +179,42 @@
             justify-content: center;
             touch-action: none;
             -webkit-touch-callout: none;
+            transition: background 0.08s ease, border-color 0.08s ease;
         }
 
         .ch-btn.cut-btn.active {
             background: #cc0000;
             border-color: #ff3333;
             color: #fff;
-            box-shadow: 0 0 12px rgba(255, 0, 0, 0.4);
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
         }
 
         .ch-btn.aux1-btn.active {
             background: #0077cc;
             border-color: #33aaff;
             color: #fff;
-            box-shadow: 0 0 12px rgba(0, 119, 204, 0.4);
+            box-shadow: 0 0 20px rgba(0, 119, 204, 0.5);
         }
 
         .ch-btn.aux2-btn.active {
             background: #00aa44;
             border-color: #33dd66;
             color: #fff;
-            box-shadow: 0 0 12px rgba(0, 170, 68, 0.4);
+            box-shadow: 0 0 20px rgba(0, 170, 68, 0.5);
         }
 
         .ch-btn.aux3-btn.active {
             background: #9933cc;
             border-color: #bb55ee;
             color: #fff;
-            box-shadow: 0 0 12px rgba(153, 51, 204, 0.4);
+            box-shadow: 0 0 20px rgba(153, 51, 204, 0.5);
         }
 
         .ch-btn.aux4-btn.active {
             background: #cc7700;
             border-color: #ff9933;
             color: #fff;
-            box-shadow: 0 0 12px rgba(204, 119, 0, 0.4);
+            box-shadow: 0 0 20px rgba(204, 119, 0, 0.5);
         }
     </style>
 </head>
@@ -210,7 +222,7 @@
 
     <div id="join-screen">
         <h1>SWARM</h1>
-        <div class="subtitle">24-CH MIXER CONTROL</div>
+        <div class="subtitle">4-CH MIXER CONTROL</div>
         <select id="user-select">
             <option value="">Select user...</option>
         </select>
@@ -236,7 +248,6 @@
         var socket = io();
         var userId = null;
 
-        // Populate user dropdown 1-100
         var select = document.getElementById("user-select");
         for (var i = 1; i <= 100; i++) {
             var opt = document.createElement("option");
@@ -245,50 +256,6 @@
             select.appendChild(opt);
         }
 
-        // Sizing function
-        function calcSizes() {
-            var vw = window.innerWidth;
-            var vh = window.innerHeight;
-            var statusHeight = 40;
-            var rowCount = 6;
-            var rowGap = 2;
-            var padding = 24;
-            var labelWidth = 46;
-
-            var availH = vh - statusHeight - padding - (rowCount * rowGap);
-            var btnH = Math.floor(availH / rowCount);
-            if (btnH < 32) { btnH = 32; }
-            if (btnH > 70) { btnH = 70; }
-
-            var availW = vw - labelWidth - padding;
-            var gap = 3;
-            var btnW = Math.floor((availW - (23 * gap)) / 24);
-            if (btnW < 32) { btnW = 32; }
-            if (btnW > 70) { btnW = 70; }
-
-            var size = Math.min(btnW, btnH);
-
-            var labels = document.querySelectorAll(".ch-label");
-            for (var i = 0; i < labels.length; i++) {
-                labels[i].style.width = size + "px";
-                labels[i].style.minWidth = size + "px";
-                labels[i].style.height = Math.floor(size * 0.5) + "px";
-            }
-
-            var btns = document.querySelectorAll(".ch-btn");
-            for (var i = 0; i < btns.length; i++) {
-                btns[i].style.width = size + "px";
-                btns[i].style.minWidth = size + "px";
-                btns[i].style.height = size + "px";
-            }
-
-            var fontSize = Math.max(7, Math.floor(size * 0.16));
-            for (var i = 0; i < btns.length; i++) {
-                btns[i].style.fontSize = fontSize + "px";
-            }
-        }
-
-        // Build mixer grid
         var grid = document.getElementById("mixer-grid");
 
         function makeRow(labelText, btnClass, btnLabel) {
@@ -303,7 +270,7 @@
             var cells = document.createElement("div");
             cells.className = "row-cells";
 
-            for (var ch = 1; ch <= 24; ch++) {
+            for (var ch = 1; ch <= 4; ch++) {
                 if (labelText === "CH") {
                     var chLabel = document.createElement("div");
                     chLabel.className = "ch-label";
@@ -329,85 +296,56 @@
         makeRow("RVB2", "aux3-btn", "RVB2");
         makeRow("SDLY", "aux4-btn", "SDLY");
 
-        calcSizes();
-        window.addEventListener("resize", calcSizes);
-
-        // Join
         document.getElementById("join-btn").addEventListener("click", function () {
             var selected = document.getElementById("user-select").value;
-            if (!selected) {
-                return;
-            }
+            if (!selected) return;
             userId = selected;
             socket.emit("join", userId);
             document.getElementById("join-screen").style.display = "none";
             document.getElementById("mixer-screen").style.display = "flex";
             document.getElementById("user-info").textContent = userId;
-            calcSizes();
         });
 
-        // CUT toggle
         var cutBtns = document.querySelectorAll(".cut-btn");
         for (var i = 0; i < cutBtns.length; i++) {
             (function (btn) {
                 var tapped = false;
-
                 btn.addEventListener("touchend", function (e) {
                     e.preventDefault();
                     tapped = true;
-                    var ch = parseInt(btn.getAttribute("data-channel"));
-                    socket.emit("cut-toggle", ch);
+                    socket.emit("cut-toggle", parseInt(btn.getAttribute("data-channel")));
                 });
-
                 btn.addEventListener("click", function () {
-                    if (tapped) {
-                        tapped = false;
-                        return;
-                    }
-                    var ch = parseInt(btn.getAttribute("data-channel"));
-                    socket.emit("cut-toggle", ch);
+                    if (tapped) { tapped = false; return; }
+                    socket.emit("cut-toggle", parseInt(btn.getAttribute("data-channel")));
                 });
             })(cutBtns[i]);
         }
 
-        // AUX momentary buttons
         function setupMomentary(className, auxName) {
             var btns = document.querySelectorAll("." + className);
             for (var i = 0; i < btns.length; i++) {
                 (function (btn) {
                     var pressed = false;
                     var ch = parseInt(btn.getAttribute("data-channel"));
-
                     function down() {
-                        if (pressed) { return; }
+                        if (pressed) return;
                         pressed = true;
                         btn.classList.add("active");
                         socket.emit("aux-down", { channel: ch, aux: auxName });
                     }
-
                     function up() {
-                        if (!pressed) { return; }
+                        if (!pressed) return;
                         pressed = false;
                         btn.classList.remove("active");
                         socket.emit("aux-up", { channel: ch, aux: auxName });
                     }
-
                     btn.addEventListener("mousedown", down);
                     btn.addEventListener("mouseup", up);
                     btn.addEventListener("mouseleave", up);
-
-                    btn.addEventListener("touchstart", function (e) {
-                        e.preventDefault();
-                        down();
-                    });
-                    btn.addEventListener("touchend", function (e) {
-                        e.preventDefault();
-                        up();
-                    });
-                    btn.addEventListener("touchcancel", function (e) {
-                        e.preventDefault();
-                        up();
-                    });
+                    btn.addEventListener("touchstart", function (e) { e.preventDefault(); down(); });
+                    btn.addEventListener("touchend", function (e) { e.preventDefault(); up(); });
+                    btn.addEventListener("touchcancel", function (e) { e.preventDefault(); up(); });
                 })(btns[i]);
             }
         }
@@ -417,41 +355,32 @@
         setupMomentary("aux3-btn", "aux3");
         setupMomentary("aux4-btn", "aux4");
 
-        // Receive full mixer state on join
         socket.on("mixer-state", function (state) {
-            for (var ch = 1; ch <= 24; ch++) {
+            for (var ch = 1; ch <= 4; ch++) {
                 var cutBtn = document.querySelector('.cut-btn[data-channel="' + ch + '"]');
-                if (state[ch].cut) {
-                    cutBtn.classList.add("active");
-                } else {
-                    cutBtn.classList.remove("active");
-                }
+                if (state[ch] && state[ch].cut) { cutBtn.classList.add("active"); }
+                else { cutBtn.classList.remove("active"); }
             }
         });
 
         socket.on("cut-update", function (data) {
+            if (data.channel > 4) return;
             var cutBtn = document.querySelector('.cut-btn[data-channel="' + data.channel + '"]');
-            if (data.state) {
-                cutBtn.classList.add("active");
-            } else {
-                cutBtn.classList.remove("active");
-            }
+            if (data.state) { cutBtn.classList.add("active"); }
+            else { cutBtn.classList.remove("active"); }
         });
 
         socket.on("aux-update", function (data) {
+            if (data.channel > 4) return;
             var btn = document.querySelector("." + data.aux + '-btn[data-channel="' + data.channel + '"]');
             if (btn) {
-                if (data.state) {
-                    btn.classList.add("active");
-                } else {
-                    btn.classList.remove("active");
-                }
+                if (data.state) { btn.classList.add("active"); }
+                else { btn.classList.remove("active"); }
             }
         });
 
         socket.on("users-update", function (users) {
             document.getElementById("user-count").textContent = users.length + " user" + (users.length === 1 ? "" : "s");
-
             var options = document.getElementById("user-select").options;
             for (var i = 1; i < options.length; i++) {
                 if (users.indexOf(options[i].value) !== -1) {

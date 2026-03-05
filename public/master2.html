@@ -240,7 +240,19 @@
 
     .aux-send-knob.swarm-active {
       border-color: #ff6600;
-      box-shadow: 0 0 10px rgba(255, 102, 0, 0.4);
+      box-shadow: 0 0 10px rgba(255, 102, 0, 0.6), 0 0 30px rgba(255, 102, 0, 0.4), 0 0 60px rgba(255, 102, 0, 0.2);
+      background: radial-gradient(circle at 50% 50%, #ff6600, #662200);
+      animation: swarm-pulse 0.4s ease-in-out infinite alternate;
+    }
+
+    @keyframes swarm-pulse {
+      0% { box-shadow: 0 0 10px rgba(255, 102, 0, 0.6), 0 0 30px rgba(255, 102, 0, 0.4); }
+      100% { box-shadow: 0 0 20px rgba(255, 102, 0, 0.9), 0 0 50px rgba(255, 102, 0, 0.6), 0 0 80px rgba(255, 102, 0, 0.3); }
+    }
+
+    .fader-strip.swarm-aux-active {
+      border-color: #ff660088;
+      box-shadow: 0 0 20px rgba(255, 102, 0, 0.15);
     }
 
     .aux-send-indicator {
@@ -1539,18 +1551,23 @@
         var co = channels[ch - 1];
         if (!co) return;
         var knob = document.getElementById('aux-send-' + ch + '-' + auxNum);
+        var strip = document.getElementById('fader-strip-' + ch);
         if (data.state) {
           if (auxNum === 1) co.aux1SendLevel = SWARM_AUX_SEND_LEVEL;
           if (auxNum === 2) co.aux2SendLevel = SWARM_AUX_SEND_LEVEL;
           if (auxNum === 3) co.aux3SendLevel = SWARM_AUX_SEND_LEVEL;
           if (auxNum === 4) co.aux4SendLevel = SWARM_AUX_SEND_LEVEL;
           if (knob) { knob.classList.add('swarm-active'); var ind = knob.querySelector('.aux-send-indicator'); if (ind) ind.style.transform = 'translateX(-50%) rotate(54deg)'; }
+          if (strip) strip.classList.add('swarm-aux-active');
         } else {
           if (auxNum === 1) co.aux1SendLevel = 0;
           if (auxNum === 2) co.aux2SendLevel = 0;
           if (auxNum === 3) co.aux3SendLevel = 0;
           if (auxNum === 4) co.aux4SendLevel = 0;
           if (knob) { knob.classList.remove('swarm-active'); var ind2 = knob.querySelector('.aux-send-indicator'); if (ind2) ind2.style.transform = 'translateX(-50%) rotate(-135deg)'; }
+          // Only remove strip glow if no aux sends are active on this channel
+          var anyActive = document.querySelectorAll('#fader-strip-' + ch + ' .aux-send-knob.swarm-active');
+          if (anyActive.length === 0) { if (strip) strip.classList.remove('swarm-aux-active'); }
         }
         updateChannelAuxSends(co);
       });

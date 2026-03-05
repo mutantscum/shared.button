@@ -310,14 +310,21 @@
         for (var i = 0; i < cutBtns.length; i++) {
             (function (btn) {
                 var tapped = false;
-                btn.addEventListener("touchstart", function (e) {
+
+                btn.addEventListener("touchend", function (e) {
                     e.preventDefault();
                     tapped = true;
-                    socket.emit("cut-toggle", parseInt(btn.getAttribute("data-channel")));
+                    var ch = parseInt(btn.getAttribute("data-channel"));
+                    socket.emit("cut-toggle", ch);
                 });
+
                 btn.addEventListener("click", function () {
-                    if (tapped) { tapped = false; return; }
-                    socket.emit("cut-toggle", parseInt(btn.getAttribute("data-channel")));
+                    if (tapped) {
+                        tapped = false;
+                        return;
+                    }
+                    var ch = parseInt(btn.getAttribute("data-channel"));
+                    socket.emit("cut-toggle", ch);
                 });
             })(cutBtns[i]);
         }

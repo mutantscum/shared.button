@@ -71,23 +71,24 @@ io.on("connection", function (socket) {
   });
 
   socket.on("join-master", function () {
+    socket.join("masters");
     console.log("Master connected: " + socket.id);
     socket.emit("mixer-state", mixerState);
   });
 
   socket.on("cut-toggle", function (channel) {
     mixerState[channel].cut = !mixerState[channel].cut;
-    io.emit("cut-update", { channel: channel, state: mixerState[channel].cut });
+    io.to("masters").emit("cut-update", { channel: channel, state: mixerState[channel].cut });
   });
 
   socket.on("aux-down", function (data) {
     mixerState[data.channel][data.aux] = true;
-    io.emit("aux-update", { channel: data.channel, aux: data.aux, state: true });
+    io.to("masters").emit("aux-update", { channel: data.channel, aux: data.aux, state: true });
   });
 
   socket.on("aux-up", function (data) {
     mixerState[data.channel][data.aux] = false;
-    io.emit("aux-update", { channel: data.channel, aux: data.aux, state: false });
+    io.to("masters").emit("aux-update", { channel: data.channel, aux: data.aux, state: false });
   });
 
   socket.on("disconnect", function () {

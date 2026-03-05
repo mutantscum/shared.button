@@ -19,6 +19,11 @@ app.get("/master", function (req, res) {
   res.sendFile(path.join(__dirname, "public", "master.html"));
 });
 
+// Serve master2 page (4 channels)
+app.get("/master2", function (req, res) {
+  res.sendFile(path.join(__dirname, "public", "master2.html"));
+});
+
 // Audio proxy to avoid CORS issues
 var https = require("https");
 app.get("/audio/:filename", function (req, res) {

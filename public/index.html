@@ -310,7 +310,7 @@
         for (var i = 0; i < cutBtns.length; i++) {
             (function (btn) {
                 var tapped = false;
-                btn.addEventListener("touchend", function (e) {
+                btn.addEventListener("touchstart", function (e) {
                     e.preventDefault();
                     tapped = true;
                     socket.emit("cut-toggle", parseInt(btn.getAttribute("data-channel")));

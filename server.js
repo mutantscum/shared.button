@@ -78,7 +78,7 @@ io.on("connection", function (socket) {
 
   socket.on("cut-toggle", function (channel) {
     mixerState[channel].cut = !mixerState[channel].cut;
-    io.to("masters").emit("cut-update", { channel: channel, state: mixerState[channel].cut });
+    io.emit("cut-update", { channel: channel, state: mixerState[channel].cut });
   });
 
   socket.on("aux-down", function (data) {
